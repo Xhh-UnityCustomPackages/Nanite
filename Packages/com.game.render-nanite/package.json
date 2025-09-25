@@ -1,0 +1,15 @@
+{
+  "name": "com.game.render-nanite",
+  "description": "Nanite",
+  "version": "0.0.1",
+  "unity": "2022.3",
+  "displayName": "Nanite",
+  "keywords": [
+    "graphics",
+    "performance",
+    "rendering",
+    "mobile",
+    "render",
+    "pipeline"
+  ]
+}

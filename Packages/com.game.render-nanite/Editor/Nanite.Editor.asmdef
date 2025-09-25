@@ -1,0 +1,18 @@
+{
+    "name": "Nanite.Editor",
+    "rootNamespace": "Nanite.Editor",
+    "references": [
+        "GUID:4ced035b4ee9e1a4989b82345fb4cf1c"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
