@@ -37,7 +37,7 @@ namespace Nanite.Editor
             m_Settings.MaxTriangles = 64;
             m_Settings.ConeWeight = 0.5f;
         }
-
+        
 
         [Button]
         private void GenerateMeshlets()
@@ -83,6 +83,15 @@ namespace Nanite.Editor
             {
                 m_ProcessingMesh = false;
             }
+        }
+
+        [Button]
+        void CalcArraySize()
+        {
+            UIntPtr maxMeshlets = MeshOptimizer.meshopt_buildMeshletsBound((UIntPtr)m_SelectedMesh.triangles.Length, (UIntPtr)m_Settings.MaxVertices, (UIntPtr)m_Settings.MaxTriangles);
+
+            int maxMeshletsInt = (int)maxMeshlets.ToUInt32();
+            Debug.LogError(maxMeshletsInt);
         }
     }
 }

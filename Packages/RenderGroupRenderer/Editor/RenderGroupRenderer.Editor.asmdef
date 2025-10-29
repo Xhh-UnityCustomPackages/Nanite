@@ -1,0 +1,21 @@
+{
+    "name": "RenderGroupRenderer.Editor",
+    "rootNamespace": "RenderGroupRenderer",
+    "references": [
+        "GUID:7d4fda57e9eda8241ab9195799811e21",
+        "GUID:c71612acbe346a344abbc0dcfdf4f0bd",
+        "GUID:dd45bb705edc4cf47acd3a4ae20a9e23",
+        "GUID:d8b63aba1907145bea998dd612889d6b"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

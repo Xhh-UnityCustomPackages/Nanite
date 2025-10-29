@@ -60,6 +60,23 @@ namespace Nanite.Editor
         private static extern bool
             GetOptimizedVertexPositions(IntPtr context, [Out] float[] positions, uint bufferSize);
 
+        [DllImport("meshoptimizer")]
+        public static extern UIntPtr meshopt_buildMeshletsBound(UIntPtr index_count, UIntPtr max_vertices, UIntPtr max_triangles);
+        
+        [DllImport("meshoptimizer")]
+        private static extern UIntPtr meshopt_buildMeshlets(
+            IntPtr meshlets,
+            uint[] meshlet_vertices,
+            byte[] meshlet_triangles,
+            uint[] indices,
+            UIntPtr index_count,
+            float[] vertex_positions,
+            UIntPtr vertex_count,
+            UIntPtr vertex_positions_stride,
+            UIntPtr max_vertices,
+            UIntPtr max_triangles,
+            float cone_weight);
+        
         public static MeshletCollection ProcessMesh(uint[] indices, Vector3[] vertices, BuildSettings buildSettings)
         {
             // Convert Vector3 array to float array
@@ -129,5 +146,15 @@ namespace Nanite.Editor
                 DestroyMeshletsContext(context);
             }
         }
+    }
+
+
+    public class MeshOptimizer2
+    {
+        private const int max_vertices = 64;
+        private const int max_triangles = 124;
+
+        [DllImport("meshoptimizer")]
+        public static extern int BuildMeshlets();
     }
 }

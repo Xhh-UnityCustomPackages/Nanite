@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.cysharp.zlinq": {
+      "version": "https://github.com/Cysharp/ZLinq.git?path=src/ZLinq.Unity/Assets/ZLinq.Unity",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "f59785046a36605378e18678af15ee66549aa26b"
+    },
     "com.game.editor-extension": {
       "version": "https://github.com/Xhh-UnityCustomPackages/EditorExtensions.git?path=Packages/com.game.editor-extension",
       "depth": 0,
@@ -215,6 +222,12 @@
         "com.unity.modules.jsonserialize": "1.0.0"
       },
       "url": "https://packages.unity.com"
+    },
+    "rendergrouprenderer": {
+      "version": "file:RenderGroupRenderer",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
     },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",

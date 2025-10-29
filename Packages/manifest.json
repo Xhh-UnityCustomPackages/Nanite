@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.cysharp.zlinq": "https://github.com/Cysharp/ZLinq.git?path=src/ZLinq.Unity/Assets/ZLinq.Unity",
     "com.game.editor-extension": "https://github.com/Xhh-UnityCustomPackages/EditorExtensions.git?path=Packages/com.game.editor-extension",
     "com.unity.ai.navigation": "2.0.8",
     "com.unity.collab-proxy": "2.9.3",

@@ -1,0 +1,15 @@
+{
+  "name": "rendergrouprenderer",
+  "description": "RenderGroupRenderer",
+  "version": "0.0.1",
+  "unity": "2022.3",
+  "displayName": "RenderGroupRenderer",
+  "keywords": [
+    "graphics",
+    "performance",
+    "rendering",
+    "mobile",
+    "render",
+    "pipeline"
+  ]
+}

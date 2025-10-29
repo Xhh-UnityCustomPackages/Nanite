@@ -1,35 +1,31 @@
 using System;
 using System.Runtime.InteropServices;
+using Sirenix.OdinInspector;
 using UnityEngine;
 
 namespace Nanite.Runtime
 {
-    [CreateAssetMenu(fileName = "MeshletAsset", menuName = "Nanite/Meshlet/Create MeshletAsset.asset", order = 1)]
-    public class MeshletAsset : ScriptableObject
-    {
-        public MeshletCollection Collection;
-        public Mesh SourceMesh;
-    }
+  
     
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public struct Meshlet
+    public struct Meshlet//对应 meshopt_Meshlet
     {
         public uint VertOffset;
-        public uint PrimOffset;
+        public uint TriangleOffset;
         public uint VertCount;
-        public uint PrimCount;
+        public uint TriangleCount;
     }
     
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     public class MeshletCollection
     {
-        [HideInInspector] public uint[] triangles;
-        [HideInInspector] public uint[] vertices;
+        [ReadOnly] public uint[] triangles;
+        [ReadOnly] public uint[] vertices;
+        [ReadOnly] public Vector3[] optimizedVertices;//每个顶点的位置
         public Meshlet[] meshlets;
         public BoundsData[] boundsDataArray;
-        [HideInInspector] public Vector3[] optimizedVertices;
     }
     
     [Serializable]
@@ -39,5 +35,14 @@ namespace Nanite.Runtime
         public Vector4 NormalCone;
         public float ApexOffset;
         public const int SIZE = sizeof(float) * 4 + sizeof(float) * 4 + sizeof(float) * 1;
+    }
+
+    [Serializable]
+    public struct Cluster
+    {
+        public int mip;
+        public int[] indices;
+        public BoundsData selfBounds;
+        public BoundsData parentBounds;
     }
 }
