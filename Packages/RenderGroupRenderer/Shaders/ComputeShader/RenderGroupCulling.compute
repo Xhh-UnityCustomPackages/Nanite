@@ -1,0 +1,72 @@
+#pragma kernel CSMain
+
+#include "../Library/GPUInstanceDefine.hlsl"
+
+//视锥剔除
+StructuredBuffer<float4> _FrustumPlanesBuffer; // 每个平面用float4表示，xyz为法线，w为距离
+//Item数据
+StructuredBuffer<Bounds> _BoundsBuffer;
+StructuredBuffer<uint> _RenderIDBuffer;
+RWStructuredBuffer<uint> _CullResultBuffer;
+//Args数据
+RWStructuredBuffer<IndirectArgs> _IndirectArgsBuffer;   //ArgsBuffer
+int _ItemCount;//总物体数量
+int _RenderCount;//总类型数量
+
+
+// 更精确的包围盒测试
+bool AABBInFrustum(float3 center, float3 extents)
+{
+    for (int i = 0; i < 6; i++)
+    {
+        float4 plane = _FrustumPlanesBuffer[i];
+        float3 normal = plane.xyz;
+        
+        // 计算包围盒在平面法线方向上的投影半径
+        float r = extents.x * abs(normal.x) + 
+                  extents.y * abs(normal.y) + 
+                  extents.z * abs(normal.z);
+                  
+        float distance = dot(normal, center) + plane.w;
+        
+        if (distance < -r) return false;
+    }
+    return true;
+}
+
+
+[numthreads(64, 1, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    int itemIndex = id.x;
+    
+    if (itemIndex >= _ItemCount)
+        return;
+
+    //TODO
+    bool isGroupVisible = true;
+    if (!isGroupVisible)
+    {
+        //连组都不可见了
+        _CullResultBuffer[itemIndex] = false;
+        return;
+    }
+    
+    Bounds bounds = _BoundsBuffer[itemIndex];
+
+    bool isVisible = AABBInFrustum(bounds.position, bounds.extents);
+    _CullResultBuffer[itemIndex] = isVisible;
+    if (isVisible)
+    {
+        int renderID = _RenderIDBuffer[itemIndex];
+        InterlockedAdd(_IndirectArgsBuffer[renderID].numInstances, 1);
+
+        //后续的其他render 后移
+        for (uint l = renderID + 1; l < _RenderCount; l++)
+        {
+            InterlockedAdd(_IndirectArgsBuffer[l].startLocation, 1);
+        }
+    }
+    
+    //假定传入的Group已经做过视锥剔除了 那么这个阶段主要做的就是Item级别的剔除
+}

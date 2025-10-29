@@ -43,6 +43,8 @@ namespace RenderGroupRenderer
 
         void ProcessGo(Transform target, RenderGroupData groupData)
         {
+            if (!target.gameObject.activeSelf)
+                return;
             GameObject outermostRoot = PrefabUtility.GetOutermostPrefabInstanceRoot(target.gameObject);
             bool isRootPrefab = outermostRoot == target.gameObject;
 
@@ -51,12 +53,8 @@ namespace RenderGroupRenderer
                 string objPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(outermostRoot);
                 if (!string.IsNullOrEmpty(objPath))
                 {
-                    float3 position = target.position;
-
-                    Debug.LogError(target.gameObject.name);
-
                     var renderers = target.gameObject.GetComponentsInChildren<Renderer>();
-                    Bounds bounds = new Bounds(position, Vector3.zero);
+                    Bounds bounds = new Bounds(target.position, Vector3.zero);
                     foreach (var renderer in renderers)
                     {
                         bounds.Encapsulate(renderer.bounds);
@@ -64,14 +62,13 @@ namespace RenderGroupRenderer
 
                     RenderGroupItemData groupItemData = new RenderGroupItemData();
                     groupItemData.bounds = bounds;
-                    groupItemData.transform = new TransformData(target);
                     groupItemData.itemDatas = new();
 
                     foreach (var _child in target.DescendantsAndSelf())
                     {
                         if (!PrefabUtility.IsPartOfAnyPrefab(_child))
                             continue;
-                        var renderer = target.GetComponent<Renderer>();
+                        var renderer = _child.GetComponent<Renderer>();
                         RenderItemData itemData = new();
                         itemData.transform = new TransformData(_child);
                         itemData.bounds = renderer.bounds;

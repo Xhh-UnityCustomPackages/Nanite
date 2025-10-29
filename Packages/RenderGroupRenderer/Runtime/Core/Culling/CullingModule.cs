@@ -13,7 +13,7 @@ namespace RenderGroupRenderer
         private NativeArray<Bounds> m_CullingBoundsNativeArray;
         private NativeArray<bool> m_CullingResultNativeArray;
 
-
+        public CameraData CameraData => m_CameraData;
         public NativeArray<bool> CullingResultNativeArray => m_CullingResultNativeArray;
 
         public CullingModule()

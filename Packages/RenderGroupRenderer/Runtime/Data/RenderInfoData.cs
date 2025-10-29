@@ -7,11 +7,6 @@ namespace RenderGroupRenderer
     public class RenderInfoData : ScriptableObject
     {
         public List<RenderItemInfoData> renderItems = new();
-
-        public RenderItemInfoData GetItemData(int id)
-        {
-            return renderItems[0];
-        }
     }
 
     [System.Serializable]

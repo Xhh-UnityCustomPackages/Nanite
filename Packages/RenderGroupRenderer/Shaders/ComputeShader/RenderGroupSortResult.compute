@@ -1,0 +1,39 @@
+#pragma kernel CSMain
+
+#include "../Library/GPUInstanceDefine.hlsl"
+
+//Item数据
+StructuredBuffer<uint> _RenderIDBuffer;
+StructuredBuffer<uint> _CullResultBuffer;
+//Args数据
+StructuredBuffer<IndirectArgs> _IndirectArgsBuffer;   //ArgsBuffer
+int _ItemCount;//总物体数量
+
+//排序数据 按照 AAABBCCCCDDDDDFFFFF 这样start offset来存放数据
+RWStructuredBuffer<uint> _SortIDBuffer;
+RWStructuredBuffer<uint> _InsertCountBuffer;
+
+[numthreads(64, 1, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    int itemIndex = id.x;
+    
+    if (itemIndex >= _ItemCount)
+        return;
+    
+    bool isVisible = _CullResultBuffer[itemIndex];
+    if (isVisible)
+    {
+        int renderID = _RenderIDBuffer[itemIndex];
+        IndirectArgs args = _IndirectArgsBuffer[renderID];
+
+        // 使用原子操作增加计数，并获取增加前的值
+        uint originalCount;
+        InterlockedAdd(_InsertCountBuffer[renderID], 1, originalCount);
+
+        int offsetIndex = args.startLocation + originalCount;
+        _SortIDBuffer[offsetIndex] = itemIndex;
+    }
+    
+    //假定传入的Group已经做过视锥剔除了 那么这个阶段主要做的就是Item级别的剔除
+}

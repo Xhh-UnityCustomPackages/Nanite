@@ -15,20 +15,28 @@ namespace RenderGroupRenderer
         [Header("Data")] 
         public RenderGroupData renderGroupData;
         public RenderInfoData renderInfoData;
+        
         [Header("Culling")] 
         public Camera CullingCamera;
         private CullingModule m_CullingModule;
         private RenderGroupRenderer m_RendererModule;
         [ShowInInspector, HideInEditorMode] 
         private RendererInfoModule m_InfoModule;
+        
+        [Header("Shader")]
+        public ComputeShader cullingShader;
+        public ComputeShader sortingShader;
 
         
         [ShowInInspector, ReadOnly]
         private RenderGroup[] m_RenderGroups;
+        
+        private RenderArgsItem[] m_RenderArgsItems;
 
         private void Awake()
         {
             CreateRenderGroup();
+            CreateRenderArgs();
             m_InfoModule = new();
             m_InfoModule.Init(renderGroupData,  renderInfoData);
             
@@ -37,7 +45,9 @@ namespace RenderGroupRenderer
             m_CullingModule.Init(m_RenderGroups);
 
             m_RendererModule = new RenderGroupRenderer();
-            m_RendererModule.Init(m_InfoModule.args, m_InfoModule.argsBuffer, m_RenderGroups);
+            m_RendererModule.Init(m_RenderArgsItems, m_InfoModule, m_CullingModule);
+            m_RendererModule.m_CullingCS = cullingShader;
+            m_RendererModule.m_SortCS = sortingShader;
             m_RendererModule.updateMaterial = m_InfoModule.UpdateMaterial;
         }
 
@@ -45,11 +55,11 @@ namespace RenderGroupRenderer
         {
             m_CullingModule.Dispose();
             m_InfoModule.Dispose();
+            m_RendererModule.Dispose();
         }
 
         void CreateRenderGroup()
         {
-            int argsOffset = 0;
             m_RenderGroups = new RenderGroup[renderGroupData.groupDatas.Count];
             var groupDatas = renderGroupData.groupDatas;
             for (int i = 0; i < groupDatas.Count; i++)
@@ -57,19 +67,31 @@ namespace RenderGroupRenderer
                 var groupData = groupDatas[i];
                 RenderGroup renderGroup = new RenderGroup();
                 renderGroup.bounds = groupData.bounds;
-                renderGroup.items = new RenderItem[groupData.itemDatas.Count];
-                renderGroup.argsOffset = argsOffset * 5;
+                renderGroup.items = new RenderGroupItem[groupData.itemDatas.Count];
                 for (int j = 0; j < groupData.itemDatas.Count; j++)
                 {
                     var itemData = groupData.itemDatas[j];
-                    var renderInfo = renderInfoData.GetItemData(itemData.itemID);
-                    int itemArgOffset = renderGroup.argsOffset + j * 5;
-                    RenderItem renderItem = new RenderItem(itemData.bounds, renderInfo.mesh, renderInfo.material, itemArgOffset);
-                    renderGroup.items[j] = renderItem;
-                    argsOffset++;
+                    
+                    RenderGroupItem renderGroupItem = new RenderGroupItem(itemData.bounds, itemData.itemID);
+                    renderGroup.items[j] = renderGroupItem;
                 }
 
                 m_RenderGroups[i] = renderGroup;
+            }
+        }
+
+        void CreateRenderArgs()
+        {
+            m_RenderArgsItems = new RenderArgsItem[renderInfoData.renderItems.Count];
+            var renderItems = renderInfoData.renderItems;
+            for (int i = 0; i < renderItems.Count; i++)
+            {
+                var renderItem = renderItems[i];
+                var mesh = renderItem.mesh;
+                var material = renderItem.material;
+                int itemArgOffset = i * 5;
+                RenderArgsItem argItem = new(mesh, material, itemArgOffset);
+                m_RenderArgsItems[i] = argItem;
             }
         }
 
@@ -80,7 +102,6 @@ namespace RenderGroupRenderer
             for (int i = 0; i < m_RenderGroups.Length; i++)
             {
                 m_RenderGroups[i].SetCullingResult(m_CullingModule.CullingResultNativeArray[i]);
-                m_RenderGroups[i].UpdateArgs(m_InfoModule.args);
             }
             //剔除的Group直接设置ArgBuffer count -1 
             //这样就在发起Indirect绘制的时候 提前判断 减少空draw

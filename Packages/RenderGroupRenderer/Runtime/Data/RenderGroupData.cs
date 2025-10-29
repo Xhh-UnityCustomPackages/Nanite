@@ -17,7 +17,6 @@ namespace RenderGroupRenderer
     public class RenderGroupItemData
     {
         public Bounds bounds;
-        public TransformData transform;
         [TableList]
         public List<RenderItemData> itemDatas = new();
     }
@@ -27,7 +26,7 @@ namespace RenderGroupRenderer
     {
         public Bounds bounds;
         public TransformData transform;
-        public int itemID;
+        public uint itemID;
     }
     
     [System.Serializable]
