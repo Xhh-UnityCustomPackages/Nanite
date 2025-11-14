@@ -1,0 +1,5 @@
+
+一些记录
+NaniteModelImporterEditor
+使用到了UnityEditor下的ModelImporterEditor,通过建一个AssemblyDefinitionReference 并挂载Unity.Burst就可以在同一个程序集里面,就可以访问到了
+
