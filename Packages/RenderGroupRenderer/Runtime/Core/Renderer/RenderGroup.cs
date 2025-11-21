@@ -12,18 +12,30 @@ namespace RenderGroupRenderer
     {
         public Bounds bounds;
         public RenderGroupItem[] items;
-        private bool m_IsShow = false;
+       
+        private ShowState m_ShowState;
 
-        public bool IsShow => m_IsShow;
-        
-        public void SetCullingResult(bool isShow)
+        public enum ShowState
         {
-            m_IsShow = isShow;
+            BVHCulling,//场景剔除了
+            PassBVHCulling,//通过场景剔除
+            PassFrustumCulling,//通过视锥剔除
+        }
+
+        public void SetCPUCullingResult(ShowState showState)
+        {
+            m_ShowState = showState;
         }
 
         public void OnDrawGizmos()
         {
-            Gizmos.color = m_IsShow ? Color.green : Color.red;
+            switch (m_ShowState)
+            {
+                case ShowState.BVHCulling: Gizmos.color = Color.red; break;
+                case ShowState.PassBVHCulling: Gizmos.color = Color.cyan; break;
+                case ShowState.PassFrustumCulling: Gizmos.color = Color.green; break;
+            }
+            
             Gizmos.DrawWireCube(bounds.center, bounds.size);
 
             for (int i = 0; i < items.Length; i++)

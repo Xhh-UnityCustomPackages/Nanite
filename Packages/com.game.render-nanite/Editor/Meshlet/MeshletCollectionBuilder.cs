@@ -164,6 +164,11 @@ namespace Nanite.Editor
             public float MinTriangleReductionPerStep;
         }
 
+        public struct SphereBounds
+        {
+            public float3 center;
+            public float radius;
+        }
         
         //可以理解位MeshCluster
         private struct MeshLODNode : IDisposable

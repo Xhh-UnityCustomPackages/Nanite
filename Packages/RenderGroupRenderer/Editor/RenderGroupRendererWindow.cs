@@ -47,6 +47,8 @@ namespace RenderGroupRenderer
                 return;
             GameObject outermostRoot = PrefabUtility.GetOutermostPrefabInstanceRoot(target.gameObject);
             bool isRootPrefab = outermostRoot == target.gameObject;
+            
+            Bounds worldBounds = new Bounds(target.position, Vector3.zero);
 
             if (isRootPrefab)
             {
@@ -75,10 +77,12 @@ namespace RenderGroupRenderer
                         groupItemData.itemDatas.Add(itemData);
                         m_Count++;
                     }
-
+                    worldBounds.Encapsulate(bounds);
                     groupData.groupDatas.Add(groupItemData);
                 }
             }
+            
+            groupData.worldBounds = worldBounds;
         }
     }
 }

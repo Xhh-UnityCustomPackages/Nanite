@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using RenderGroupRenderer.Info;
 using Sirenix.OdinInspector;
@@ -16,6 +17,8 @@ namespace RenderGroupRenderer
         public RenderGroupData renderGroupData;
         public RenderInfoData renderInfoData;
         
+        private SceneModule m_SceneModule;
+        
         [Header("Culling")] 
         public Camera CullingCamera;
         private CullingModule m_CullingModule;
@@ -27,6 +30,9 @@ namespace RenderGroupRenderer
         public ComputeShader cullingShader;
         public ComputeShader sortingShader;
 
+        [Header("Debug")] 
+        public bool showDebug = false;
+        
         
         [ShowInInspector, ReadOnly]
         private RenderGroup[] m_RenderGroups;
@@ -37,12 +43,18 @@ namespace RenderGroupRenderer
         {
             CreateRenderGroup();
             CreateRenderArgs();
+
+            m_SceneModule = new();
+            m_SceneModule.Init(m_RenderGroups);
+           
+            
             m_InfoModule = new();
             m_InfoModule.Init(renderGroupData,  renderInfoData);
             
             m_CullingModule = new();
             m_CullingModule.SetCullingCamera(CullingCamera);
-            m_CullingModule.Init(m_RenderGroups);
+            m_CullingModule.AddToBVHFrustumCull(m_SceneModule.BVHTree);
+            // m_CullingModule.Init(m_RenderGroups);
 
             m_RendererModule = new RenderGroupRenderer();
             m_RendererModule.Init(m_RenderArgsItems, m_InfoModule, m_CullingModule);
@@ -97,12 +109,17 @@ namespace RenderGroupRenderer
 
         private void Update()
         {
-            m_CullingModule.OnUpdate();
+            m_CullingModule?.OnUpdate();
+        }
+        
+        private void LateUpdate()
+        {
+            m_CullingModule.OnLateUpdate();
             //填充回RenderGroup
-            for (int i = 0; i < m_RenderGroups.Length; i++)
-            {
-                m_RenderGroups[i].SetCullingResult(m_CullingModule.CullingResultNativeArray[i]);
-            }
+            // for (int i = 0; i < m_RenderGroups.Length; i++)
+            // {
+            //     m_RenderGroups[i].SetCullingResult(m_CullingModule.CullingResultNativeArray[i]);
+            // }
             //剔除的Group直接设置ArgBuffer count -1 
             //这样就在发起Indirect绘制的时候 提前判断 减少空draw
 
@@ -111,6 +128,11 @@ namespace RenderGroupRenderer
 
         private void OnDrawGizmos()
         {
+            if (!showDebug)
+            {
+                return;
+            }
+
             m_CullingModule?.OnDrawGizmos();
             if (m_RenderGroups != null)
             {

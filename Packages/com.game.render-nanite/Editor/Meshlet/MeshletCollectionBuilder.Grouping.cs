@@ -32,38 +32,38 @@ namespace Nanite.Editor
             }
 
 
-            NativeArray<NativeHashSet<Edge>> edgeSets = CollectEdgeSets(meshLODNodeLevel);
-
-            NativeArray<int> adjacencyMatrix = CreateAdjacencyMatrix(edgeSets, Allocator.TempJob);
-            edgeSets.Dispose();
-
-
-            var adjacencyIndexList = new NativeArray<int>(graphNodeCount + 1, Allocator.Temp)
-            {
-                [0] = 0,
-            };
-            var adjacencyList = new NativeList<int>(graphNodeCount, Allocator.Temp);
-            var adjacencyWeightList = new NativeList<int>(graphNodeCount, Allocator.Temp);
-
-            for (int node1 = 0; node1 < graphNodeCount; node1++)
-            {
-                int totalEdgeCount = 0;
-
-                for (int node2 = 0; node2 < graphNodeCount; node2++)
-                {
-                    int weight = adjacencyMatrix[node1 * graphNodeCount + node2];
-                    if (weight > 0)
-                    {
-                        adjacencyList.Add(node2);
-                        adjacencyWeightList.Add(weight);
-                        ++totalEdgeCount;
-                    }
-                }
-
-                adjacencyIndexList[node1 + 1] = adjacencyIndexList[node1] + totalEdgeCount;
-            }
-
-            adjacencyMatrix.Dispose();
+            // NativeArray<NativeHashSet<Edge>> edgeSets = CollectEdgeSets(meshLODNodeLevel);
+            //
+            // NativeArray<int> adjacencyMatrix = CreateAdjacencyMatrix(edgeSets, Allocator.TempJob);
+            // edgeSets.Dispose();
+            //
+            //
+            // var adjacencyIndexList = new NativeArray<int>(graphNodeCount + 1, Allocator.Temp)
+            // {
+            //     [0] = 0,
+            // };
+            // var adjacencyList = new NativeList<int>(graphNodeCount, Allocator.Temp);
+            // var adjacencyWeightList = new NativeList<int>(graphNodeCount, Allocator.Temp);
+            //
+            // for (int node1 = 0; node1 < graphNodeCount; node1++)
+            // {
+            //     int totalEdgeCount = 0;
+            //
+            //     for (int node2 = 0; node2 < graphNodeCount; node2++)
+            //     {
+            //         int weight = adjacencyMatrix[node1 * graphNodeCount + node2];
+            //         if (weight > 0)
+            //         {
+            //             adjacencyList.Add(node2);
+            //             adjacencyWeightList.Add(weight);
+            //             ++totalEdgeCount;
+            //         }
+            //     }
+            //
+            //     adjacencyIndexList[node1 + 1] = adjacencyIndexList[node1] + totalEdgeCount;
+            // }
+            //
+            // adjacencyMatrix.Dispose();
 
             return default;
 

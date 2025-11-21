@@ -10,23 +10,30 @@ namespace RenderGroupRenderer
     public class RenderGroupData : ScriptableObject
     {
         public int totalCount;
+        public Bounds worldBounds;
         public List<RenderGroupItemData> groupDatas = new();
     }
 
     [System.Serializable]
-    public class RenderGroupItemData
+    public class RenderGroupItemData : IItem
     {
         public Bounds bounds;
         [TableList]
         public List<RenderItemData> itemDatas = new();
+        
+        
+        public Bounds Bounds => bounds;
     }
 
     [System.Serializable]
-    public class RenderItemData
+    public class RenderItemData : IItem
     {
         public Bounds bounds;
         public TransformData transform;
         public uint itemID;
+        
+        
+        public Bounds Bounds => bounds;
     }
     
     [System.Serializable]
@@ -55,4 +62,10 @@ namespace RenderGroupRenderer
             return Matrix4x4.TRS(position, Quaternion.Euler(rotation), scale);
         }
     }
+
+    public interface IItem
+    {
+        public Bounds Bounds { get; }
+    }
+
 }
