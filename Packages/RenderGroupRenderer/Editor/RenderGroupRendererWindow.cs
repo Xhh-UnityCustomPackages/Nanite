@@ -11,7 +11,7 @@ namespace RenderGroupRenderer
     {
         public Transform root;
 
-        [MenuItem("Tools/RenderGroupRendererWindow")]
+        [MenuItem("Tools/RenderGroupRenderer/RenderGroupRendererWindow")]
         public static void ShowWindow()
         {
             var window = GetWindow<RenderGroupRendererWindow>();

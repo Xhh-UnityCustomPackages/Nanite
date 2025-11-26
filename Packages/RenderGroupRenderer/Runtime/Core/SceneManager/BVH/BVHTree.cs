@@ -57,9 +57,9 @@ namespace RenderGroupRenderer
             return node;
         }
 
-        public void FrustumCull(Plane[] frustumPlanes, List<BVHNode> visibleNodes, ref int itemCount)
+        public void FrustumCull(Plane[] frustumPlanes, List<BVHNode> visibleNodes, uint[] cullResultArray, ref int itemCount)
         {
-            m_Root.FrustumCull(frustumPlanes, visibleNodes, ref itemCount);
+            m_Root.FrustumCull(frustumPlanes, visibleNodes, ref cullResultArray, ref itemCount);
         }
 
         public void DrawTargetDepth(int displayDepth)

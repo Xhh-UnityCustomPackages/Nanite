@@ -47,7 +47,7 @@ namespace RenderGroupRenderer
             
             bvhTree = new(m_RenderGroups.ToList());
 
-            m_CullingModule = new();
+            m_CullingModule = new(null);
             m_CullingModule.SetCullingCamera(CullingCamera);
             m_CullingModule.AddToBVHFrustumCull(bvhTree);
         }

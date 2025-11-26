@@ -49,8 +49,23 @@ namespace RenderGroupRenderer
         }
         #endregion
 
+        void SetGroupCullResult(uint[] cullResultArray, bool show)
+        {
+            if (m_Objects == null)
+            {
+                return;
+            }
 
-        public void FrustumCull(Plane[] frustumPlanes, List<BVHNode> visibleNodes, ref int itemCount)
+            for (var i = 0; i < m_Objects.Count; i++)
+            {
+                for (var j = 0; j < m_Objects[i].items.Length; j++)
+                {
+                    cullResultArray[m_Objects[i].items[j].itemID] = (uint)(show ? 1 : 0);
+                }
+            }
+        }
+
+        public void FrustumCull(Plane[] frustumPlanes, List<BVHNode> visibleNodes, ref uint[] cullResultArray, ref int itemCount)
         {
             //这个是Debug逻辑 可以移除或者用宏开启
             if (IsLeaf)
@@ -59,10 +74,14 @@ namespace RenderGroupRenderer
                 {
                     m_Objects[i].SetCPUCullingResult(RenderGroup.ShowState.BVHCulling);
                 }
+                
             }
             
             if (!GeometryUtility.TestPlanesAABB(frustumPlanes, m_Bounds))
             {
+                
+                SetGroupCullResult(cullResultArray, false);
+                
                 return;
             }
             
@@ -71,11 +90,13 @@ namespace RenderGroupRenderer
             {
                 visibleNodes.Add(this);
                 itemCount += m_Objects.Count;
+                
+                SetGroupCullResult(cullResultArray, true);
             }
             else
             {
-                left.FrustumCull(frustumPlanes, visibleNodes, ref itemCount);
-                right.FrustumCull(frustumPlanes, visibleNodes, ref itemCount);
+                left.FrustumCull(frustumPlanes, visibleNodes, ref cullResultArray, ref itemCount);
+                right.FrustumCull(frustumPlanes, visibleNodes, ref cullResultArray, ref itemCount);
             }
         }
 

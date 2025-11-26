@@ -6,14 +6,12 @@ namespace RenderGroupRenderer
 {
     public class RenderGroupRenderer
     {
-        
         private RenderArgsItem[] m_RenderItems;
         private Bounds m_Bounds;
 
         public ComputeShader m_CullingCS;
         private ComputeBuffer m_FrustumPlanesBuffer;
-        private ComputeBuffer m_CullResultBuffer;
-        private uint[] m_CullResultsArray;
+        
 
         public ComputeShader m_SortCS;
         private ComputeBuffer m_CullSortIDBuffer;
@@ -26,7 +24,13 @@ namespace RenderGroupRenderer
 
         private RendererInfoModule m_InfoModule;
         private CullingModule m_CullingModule;
-        
+        private RenderGroupRendererSystem m_System;
+
+        public RenderGroupRenderer(RenderGroupRendererSystem system)
+        {
+            m_System = system;
+        }
+
         public void Init(RenderArgsItem[] renderGroups, RendererInfoModule infoModule, CullingModule cullingModule)
         {
             m_RenderItems = renderGroups;
@@ -39,50 +43,41 @@ namespace RenderGroupRenderer
         public void Dispose()
         {
             m_FrustumPlanesBuffer?.Dispose();
-            m_CullResultBuffer?.Dispose();
             m_CullSortIDBuffer?.Dispose();
             m_InsertCountBuffer?.Dispose();
         }
 
 
-        public void OnUpdate()
+        public void OnLateUpdate()
         {
             UpdateGPUBuffer();
-            Culling();
+            GPUCulling();
             Sort();
             Renderer();
         }
 
         private void UpdateGPUBuffer()
         {
-            //这样就会重置数据
-            m_InfoModule.argsBuffer.SetData(m_InfoModule.args);
-        }
-
-        private void Culling()
-        {
-            int totalCount = m_InfoModule.rendererItemCount;
             if (m_FrustumPlanesBuffer == null)
             {
                 m_FrustumPlanesBuffer = new ComputeBuffer(6, sizeof(float) * 4);
             }
-
-            if (m_CullResultBuffer == null)
-            {
-                m_CullResultBuffer = new ComputeBuffer(totalCount, sizeof(uint));
-                m_CullResultsArray = new uint[totalCount];
-            }
-
+            
             //清空剔除结果
-            m_CullResultBuffer.SetData(m_CullResultsArray);
-            
-            
+            m_InfoModule.argsBuffer.SetData(m_InfoModule.args);
+            //回退到CPU剔除的结果
+            m_InfoModule.cullResultBuffer.SetData(m_InfoModule.cullResult);
+        }
+
+        private void GPUCulling()
+        {
+            int totalCount = m_InfoModule.rendererItemCount;
             
             int kernel = 0;
             m_CullingCS.SetBuffer(kernel, "_IndirectArgsBuffer", m_InfoModule.argsBuffer);//间接绘制Buffer
             m_CullingCS.SetBuffer(kernel, "_BoundsBuffer", m_InfoModule.boundsBuffer);//每个物体的包围盒信息
             m_CullingCS.SetBuffer(kernel, "_RenderIDBuffer", m_InfoModule.rendererIDBuffer);
-            m_CullingCS.SetBuffer(kernel, "_CullResultBuffer", m_CullResultBuffer);
+            m_CullingCS.SetBuffer(kernel, "_CullResultBuffer", m_InfoModule.cullResultBuffer);
             
             m_CullingCS.SetInt("_ItemCount", totalCount);
             m_CullingCS.SetInt("_RenderCount", m_InfoModule.renderTypeCount);
@@ -118,7 +113,7 @@ namespace RenderGroupRenderer
             int kernel = 0;
             m_SortCS.SetBuffer(kernel, "_IndirectArgsBuffer", m_InfoModule.argsBuffer); //间接绘制Buffer
             m_SortCS.SetBuffer(kernel, "_RenderIDBuffer", m_InfoModule.rendererIDBuffer);
-            m_SortCS.SetBuffer(kernel, "_CullResultBuffer", m_CullResultBuffer);
+            m_SortCS.SetBuffer(kernel, "_CullResultBuffer", m_InfoModule.cullResultBuffer);
             m_SortCS.SetBuffer(kernel, "_SortIDBuffer", m_CullSortIDBuffer);
             m_SortCS.SetBuffer(kernel, "_InsertCountBuffer", m_InsertCountBuffer);
 

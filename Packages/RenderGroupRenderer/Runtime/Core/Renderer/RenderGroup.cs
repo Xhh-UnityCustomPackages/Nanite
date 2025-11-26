@@ -10,6 +10,7 @@ namespace RenderGroupRenderer
     [System.Serializable]
     public class RenderGroup
     {
+        public int groupID;
         public Bounds bounds;
         public RenderGroupItem[] items;
        
@@ -51,6 +52,8 @@ namespace RenderGroupRenderer
     [System.Serializable]
     public class RenderGroupItem
     {
+        public int groupID;
+        public int itemID;
         public Bounds bounds;
         public uint renderID;
         

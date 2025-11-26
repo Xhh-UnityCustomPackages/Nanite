@@ -12,16 +12,19 @@ namespace RenderGroupRenderer
         public static RenderGroupCulling CreateJob(
             NativeArray<Plane> frustumPlanes,
             NativeArray<Bounds> bounds,
+            NativeArray<int> groupIDs,
             NativeArray<bool> results
             )
         {
             RenderGroupCulling job = new RenderGroupCulling();
             job.FrustumPlanes = frustumPlanes;
+            job.groupIDs = groupIDs;
             job.AllBounds = bounds;
             job.Results = results;
             return job;
         }
     
+        [ReadOnly] public NativeArray<int> groupIDs;
         [ReadOnly] public NativeArray<Bounds> AllBounds; //全部物体的包围盒
         [ReadOnly] public NativeArray<Plane> FrustumPlanes; //摄像机视锥平面
         
@@ -34,7 +37,10 @@ namespace RenderGroupRenderer
             var itemBounds = AllBounds[index];
             
             bool isFrustumCulled = IsFrustumCulled(itemBounds);
-            Results[index] = !isFrustumCulled;
+            
+            bool show = !isFrustumCulled;
+            
+            Results[index] = show;
         }
 
         bool IsFrustumCulled(Bounds itemBounds)

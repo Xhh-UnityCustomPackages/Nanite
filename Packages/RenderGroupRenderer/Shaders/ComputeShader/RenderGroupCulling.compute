@@ -43,6 +43,12 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     if (itemIndex >= _ItemCount)
         return;
 
+    //已经在CPU阶段被剔除了 跳过
+    if (_CullResultBuffer[itemIndex] == false)
+    {
+        return;
+    }
+
     //TODO
     bool isGroupVisible = true;
     if (!isGroupVisible)

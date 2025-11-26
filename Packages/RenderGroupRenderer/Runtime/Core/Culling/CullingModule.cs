@@ -7,16 +7,32 @@ namespace RenderGroupRenderer
 {
     public class CullingModule
     {
+        struct FFrustumCullingFlags
+        {
+            bool bShouldVisibilityCull;
+            bool bUseCustomCulling;
+            bool bUseSphereTestFirst;
+            bool bUseFastIntersect;
+            bool bUseVisibilityOctree;
+            bool bHasHiddenPrimitives;
+            bool bHasShowOnlyPrimitives;
+        }
+
+
         private CameraData m_CameraData;
 
         private NativeArray<Bounds> m_CullingBoundsNativeArray;
+        private NativeArray<int> m_CullingGroupIDsNativeArray;
         private NativeArray<bool> m_CullingResultNativeArray;
 
         public CameraData CameraData => m_CameraData;
         public NativeArray<bool> CullingResultNativeArray => m_CullingResultNativeArray;
 
-        public CullingModule()
+        private RenderGroupRendererSystem m_System;
+
+        public CullingModule(RenderGroupRendererSystem system)
         {
+            m_System = system;
             m_CameraData = new CameraData();
         }
 
@@ -24,18 +40,6 @@ namespace RenderGroupRenderer
         {
             m_CameraData.SetCamera(camera);
         }
-
-        // public void Init(RenderGroup[] renderGroups)
-        // {
-        //     int groupCount = renderGroups.Length;
-        //     m_CullingBoundsNativeArray = new NativeArray<Bounds>(groupCount, Allocator.Persistent);
-        //     m_CullingResultNativeArray = new NativeArray<bool>(groupCount, Allocator.Persistent);
-        //     for (int i = 0; i < groupCount; i++)
-        //     {
-        //         m_CullingBoundsNativeArray[i] = renderGroups[i].bounds;
-        //         m_CullingResultNativeArray[i] = false;
-        //     }
-        // }
 
         #region Scene Culling 粗粒度剔除
 
@@ -72,7 +76,7 @@ namespace RenderGroupRenderer
                 CreateCullingItemData();
                 
                 //逐RenderGroupItemData剔除
-                CPUCulling();
+                CPUPreItemCulling();
             }
         }
 
@@ -80,13 +84,20 @@ namespace RenderGroupRenderer
         {
             if (m_BVHTree == null)
                 return;
-            
-            //Debug代码 可以移除
-            m_BVHTree.Iteration(g => g.SetCPUCullingResult(RenderGroup.ShowState.BVHCulling), null);
+
+            if (m_System != null && m_System.showDebug)
+            {
+                //Debug代码 可以移除
+                m_BVHTree.Iteration(g => g.SetCPUCullingResult(RenderGroup.ShowState.BVHCulling), null);
+            }
+
 
             m_VisibleNodes.Clear();
             m_AfterBVHCullingRenderItemCount = 0;
-            m_BVHTree.FrustumCull(m_CameraData.cullingPlanes, m_VisibleNodes, ref m_AfterBVHCullingRenderItemCount);
+            m_BVHTree.FrustumCull(m_CameraData.cullingPlanes, m_VisibleNodes, m_System.infoModule.cullResult, ref m_AfterBVHCullingRenderItemCount);
+            
+            //更新 info剔除结果
+            
         }
         
         void CreateCullingItemData()
@@ -97,13 +108,16 @@ namespace RenderGroupRenderer
                 {
                     m_CullingBoundsNativeArray.Dispose();
                     m_CullingResultNativeArray.Dispose();
+                    m_CullingGroupIDsNativeArray.Dispose();
                     m_CullingBoundsNativeArray = new NativeArray<Bounds>(m_AfterBVHCullingRenderItemCount, Allocator.Persistent);
+                    m_CullingGroupIDsNativeArray = new NativeArray<int>(m_AfterBVHCullingRenderItemCount, Allocator.Persistent);
                     m_CullingResultNativeArray = new NativeArray<bool>(m_AfterBVHCullingRenderItemCount, Allocator.Persistent);
                 }
             }
             else
             {
                 m_CullingBoundsNativeArray = new NativeArray<Bounds>(m_AfterBVHCullingRenderItemCount, Allocator.Persistent);
+                m_CullingGroupIDsNativeArray = new NativeArray<int>(m_AfterBVHCullingRenderItemCount, Allocator.Persistent);
                 m_CullingResultNativeArray = new NativeArray<bool>(m_AfterBVHCullingRenderItemCount, Allocator.Persistent);
             }
             
@@ -115,6 +129,7 @@ namespace RenderGroupRenderer
                 {
                     var renderGroup = renerGroups[n];
                     renderGroup.SetCPUCullingResult(RenderGroup.ShowState.PassBVHCulling);
+                    m_CullingGroupIDsNativeArray[index] = renderGroup.groupID;
                     m_CullingBoundsNativeArray[index] = renderGroup.bounds;
                     m_CullingResultNativeArray[index] = false;
                     
@@ -124,15 +139,27 @@ namespace RenderGroupRenderer
 
         }
 
-        void CPUCulling()
+        void CPUPreItemCulling()
         {
             int length = m_CullingBoundsNativeArray.Length;
             if (length <= 0)
                 return;
 
-            var cullJobs = RenderGroupCulling.CreateJob(m_CameraData.cullingPlaneArray, m_CullingBoundsNativeArray, m_CullingResultNativeArray);
+            var cullJobs = RenderGroupCulling.CreateJob(m_CameraData.cullingPlaneArray, m_CullingBoundsNativeArray, m_CullingGroupIDsNativeArray, m_CullingResultNativeArray);
             var job = cullJobs.Schedule(length, length);
             job.Complete();
+            
+            //读取Group剔除结果 直接设置GroupItem的剔除结果
+            for (int i = 0; i < m_CullingResultNativeArray.Length; i++)
+            {
+                bool result = m_CullingResultNativeArray[i];
+                var groupID = m_CullingGroupIDsNativeArray[i];
+                var items = m_System.renderGroups[groupID].items;
+                for (int j = 0; j < items.Length; j++)
+                {
+                    m_System.infoModule.cullResult[items[j].itemID] = (uint)(result?1:0);
+                }
+            }
         }
 
         public void OnDrawGizmos()
