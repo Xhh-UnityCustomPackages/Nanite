@@ -29,15 +29,15 @@ namespace RenderGroupRenderer
         public RenderGroupRenderer(RenderGroupRendererSystem system)
         {
             m_System = system;
+            m_InfoModule = system.infoModule;
+            m_CullingModule = system.cullingModule;
         }
 
-        public void Init(RenderArgsItem[] renderGroups, RendererInfoModule infoModule, CullingModule cullingModule)
+        public void Init(RenderArgsItem[] renderItems)
         {
-            m_RenderItems = renderGroups;
+            m_RenderItems = renderItems;
             m_Bounds = new Bounds(Vector3.zero, Vector3.one * 1000);
-            
-            m_InfoModule = infoModule;
-            m_CullingModule = cullingModule;
+            m_FrustumPlanesBuffer = new ComputeBuffer(6, sizeof(float) * 4);
         }
 
         public void Dispose()
@@ -47,30 +47,34 @@ namespace RenderGroupRenderer
             m_InsertCountBuffer?.Dispose();
         }
 
-
         public void OnLateUpdate()
         {
-            UpdateGPUBuffer();
             GPUCulling();
             Sort();
             Renderer();
+
+            // Log();
         }
 
-        private void UpdateGPUBuffer()
+        void Log()
         {
-            if (m_FrustumPlanesBuffer == null)
+            uint[] args = new uint[m_InfoModule.argsBuffer.count];
+            m_InfoModule.argsBuffer.GetData(args);
+
+            for (int i = 0; i < args.Length / 5; i++)
             {
-                m_FrustumPlanesBuffer = new ComputeBuffer(6, sizeof(float) * 4);
+                Debug.LogError($"Args{i}|1:{args[i * 5 + 1]}_4:{args[i * 5 + 4]}");
             }
-            
-            //清空剔除结果
-            m_InfoModule.argsBuffer.SetData(m_InfoModule.args);
-            //回退到CPU剔除的结果
-            m_InfoModule.cullResultBuffer.SetData(m_InfoModule.cullResult);
         }
 
         private void GPUCulling()
         {
+            //清空渲染数量
+            m_InfoModule.argsBuffer.SetData(m_InfoModule.args);
+            //回退到CPU剔除的结果
+            m_InfoModule.cullResultBuffer.SetData(m_InfoModule.cullResult);
+            
+            
             int totalCount = m_InfoModule.rendererItemCount;
             
             int kernel = 0;
@@ -78,9 +82,14 @@ namespace RenderGroupRenderer
             m_CullingCS.SetBuffer(kernel, "_BoundsBuffer", m_InfoModule.boundsBuffer);//每个物体的包围盒信息
             m_CullingCS.SetBuffer(kernel, "_RenderIDBuffer", m_InfoModule.rendererIDBuffer);
             m_CullingCS.SetBuffer(kernel, "_CullResultBuffer", m_InfoModule.cullResultBuffer);
+            m_CullingCS.SetBuffer(kernel, "_LODLevelBuffer", m_InfoModule.LODLevelBuffer);
             
+            //类型信息Buffer
+            m_CullingCS.SetBuffer(kernel, "_LODDistanceBuffer", m_InfoModule.LODDistanceBuffer);
+            
+            m_CullingCS.SetVector("_CameraPosition", m_CullingModule.CameraData.position);
             m_CullingCS.SetInt("_ItemCount", totalCount);
-            m_CullingCS.SetInt("_RenderCount", m_InfoModule.renderTypeCount);
+            m_CullingCS.SetInt("_RenderTypeCount", m_InfoModule.renderTypeCount);
 
             m_FrustumPlanesBuffer.SetData(m_CullingModule.CameraData.cullingPlanes);
             m_CullingCS.SetBuffer(kernel, "_FrustumPlanesBuffer", m_FrustumPlanesBuffer);
@@ -101,8 +110,9 @@ namespace RenderGroupRenderer
 
             if (m_InsertCountBuffer == null)
             {
-                m_InsertCountBuffer = new ComputeBuffer(m_InfoModule.renderTypeCount, sizeof(uint), ComputeBufferType.Counter);
-                m_InsertCountArray = new uint[m_InfoModule.renderTypeCount];
+                int length = m_InfoModule.renderTypeCount * Define.LOD_COUNT;
+                m_InsertCountBuffer = new ComputeBuffer(length, sizeof(uint), ComputeBufferType.Counter);
+                m_InsertCountArray = new uint[length];
             }
 
             //清空排序结果
@@ -114,6 +124,7 @@ namespace RenderGroupRenderer
             m_SortCS.SetBuffer(kernel, "_IndirectArgsBuffer", m_InfoModule.argsBuffer); //间接绘制Buffer
             m_SortCS.SetBuffer(kernel, "_RenderIDBuffer", m_InfoModule.rendererIDBuffer);
             m_SortCS.SetBuffer(kernel, "_CullResultBuffer", m_InfoModule.cullResultBuffer);
+            m_SortCS.SetBuffer(kernel, "_LODLevelBuffer", m_InfoModule.LODLevelBuffer);
             m_SortCS.SetBuffer(kernel, "_SortIDBuffer", m_CullSortIDBuffer);
             m_SortCS.SetBuffer(kernel, "_InsertCountBuffer", m_InsertCountBuffer);
 
@@ -126,6 +137,8 @@ namespace RenderGroupRenderer
 
         private void Renderer()
         {
+            //TODO 如何杜绝空数量的Draw
+            
             for (int i = 0; i < m_RenderItems.Length; i++)
             {
                 var renderItem = m_RenderItems[i];

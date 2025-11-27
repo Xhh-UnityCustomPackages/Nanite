@@ -16,4 +16,6 @@ struct Bounds
     float3 extents;
 };
 
+#define LOD_LEVEL 3
+
 #endif

@@ -14,7 +14,7 @@ namespace RenderGroupRenderer
     public class RenderGroupRendererSystem : MonoBehaviour
     {
         [Header("Settings")]
-        public bool useLOD = false;
+       
         [Header("Data")] 
         public RenderGroupData renderGroupData;
         public RenderInfoData renderInfoData;
@@ -45,6 +45,7 @@ namespace RenderGroupRenderer
         
         public RenderGroup[] renderGroups => m_RenderGroups;
         public RendererInfoModule infoModule => m_InfoModule;
+        public CullingModule cullingModule => m_CullingModule;
 
         private void Awake()
         {
@@ -62,7 +63,7 @@ namespace RenderGroupRenderer
             m_CullingModule.AddToBVHFrustumCull(m_SceneModule.BVHTree);
 
             m_RendererModule = new RenderGroupRenderer(this);
-            m_RendererModule.Init(m_RenderArgsItems, m_InfoModule, m_CullingModule);
+            m_RendererModule.Init(m_RenderArgsItems);
             m_RendererModule.m_CullingCS = cullingShader;
             m_RendererModule.m_SortCS = sortingShader;
             m_RendererModule.updateMaterial = m_InfoModule.UpdateMaterial;
@@ -105,10 +106,8 @@ namespace RenderGroupRenderer
         {
             int renderItemsCount = renderInfoData.renderItems.Count;
             int totalCount = renderInfoData.renderItems.Count;
-            if (useLOD)
-            {
-                totalCount *= Define.LOD_COUNT;//每个里面分为3级LOD
-            }
+            totalCount *= Define.LOD_COUNT;//每个里面分为3级LOD
+            
 
             m_RenderArgsItems = new RenderArgsItem[totalCount];
             var renderItems = renderInfoData.renderItems;
@@ -116,7 +115,7 @@ namespace RenderGroupRenderer
             {
                 var renderItem = renderItems[i].data;
 
-                if (useLOD)
+                // if (useLOD)
                 {
                     var lodInfo = renderItem.lod0Info;
                     var mesh = lodInfo.mesh;
@@ -139,15 +138,15 @@ namespace RenderGroupRenderer
                     argItem = new(mesh, material, itemArgOffset);
                     m_RenderArgsItems[i * Define.LOD_COUNT + 2] = argItem;
                 }
-                else
-                {
-                    var lodInfo = renderItem.lod0Info;
-                    var mesh = lodInfo.mesh;
-                    var material = lodInfo.material;
-                    int itemArgOffset = i * 5;
-                    RenderArgsItem argItem = new(mesh, material, itemArgOffset);
-                    m_RenderArgsItems[i] = argItem;
-                }
+                // else
+                // {
+                //     var lodInfo = renderItem.lod0Info;
+                //     var mesh = lodInfo.mesh;
+                //     var material = lodInfo.material;
+                //     int itemArgOffset = i * 5;
+                //     RenderArgsItem argItem = new(mesh, material, itemArgOffset);
+                //     m_RenderArgsItems[i] = argItem;
+                // }
             }
 
             // LoadRenderArgsItem();

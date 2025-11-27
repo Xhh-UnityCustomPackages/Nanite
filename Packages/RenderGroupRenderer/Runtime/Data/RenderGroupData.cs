@@ -9,8 +9,9 @@ namespace RenderGroupRenderer
     [CreateAssetMenu(fileName = "RenderGroupData", menuName = "RenderGroup/RenderGroupData", order = 1)]
     public class RenderGroupData : ScriptableObject
     {
-        public int totalCount;
+        public int totalCount;//总共渲染的数量
         public Bounds worldBounds;
+        // [TableList] // 造成卡顿
         public List<RenderGroupItemData> groupDatas = new();
     }
 
@@ -31,7 +32,6 @@ namespace RenderGroupRenderer
         public Bounds bounds;
         public TransformData transform;
         public uint itemID;
-        
         
         public Bounds Bounds => bounds;
     }

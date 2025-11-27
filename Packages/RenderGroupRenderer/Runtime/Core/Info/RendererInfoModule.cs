@@ -19,7 +19,12 @@ namespace RenderGroupRenderer.Info
         [ShowInInspector, ReadOnly] private uint[] m_RenderIDsArray;
         private ComputeBuffer m_CullResultBuffer;
         [ShowInInspector, ReadOnly] private uint[] m_CullResultArray;
-      
+        private ComputeBuffer m_LODLevelBuffer;
+        private uint[] m_LODLevelArray;
+        
+        //根据RenderID拿到的数据
+        private ComputeBuffer m_LODDistanceBuffer;
+        [ShowInInspector, ReadOnly] private Vector3[] m_LODDistanceArray;
         
         
         
@@ -32,6 +37,9 @@ namespace RenderGroupRenderer.Info
         public ComputeBuffer boundsBuffer => m_BoundsBuffer;
         public ComputeBuffer rendererIDBuffer => m_RenderIDBuffer;
         public ComputeBuffer cullResultBuffer => m_CullResultBuffer;
+        public ComputeBuffer LODLevelBuffer => m_LODLevelBuffer;
+        
+        public ComputeBuffer LODDistanceBuffer => m_LODDistanceBuffer;
         public int rendererItemCount { get; set; }
         public int renderTypeCount { get; private set; }
 
@@ -54,19 +62,17 @@ namespace RenderGroupRenderer.Info
             dataArray = new T[count];
         }
 
-        void CreateBuffer(RenderGroupData renderGroupData, RenderInfoData renderInfoData)
+        void InitPreItemData(RenderGroupData renderGroupData)
         {
             int count = renderGroupData.totalCount;
-
-            int index = 0;
-            
-            //
             CreateDataAndBuffer(count, out m_TransformBuffer, out m_TransformsArray);
             CreateDataAndBuffer(count, out m_BoundsBuffer, out m_BoundsArray);
             CreateDataAndBuffer(count, out m_GroupIDBuffer, out m_GroupIDsArray);
             CreateDataAndBuffer(count, out m_RenderIDBuffer, out m_RenderIDsArray);
             CreateDataAndBuffer(count, out m_CullResultBuffer, out m_CullResultArray);
-
+            CreateDataAndBuffer(count, out m_LODLevelBuffer, out m_LODLevelArray);
+            
+            int index = 0;
             for (int i = 0; i < renderGroupData.groupDatas.Count; i++)
             {
                 var groupData = renderGroupData.groupDatas[i];
@@ -76,8 +82,9 @@ namespace RenderGroupRenderer.Info
                     m_TransformsArray[index] = itemData.transform.GetTransformMatrix();
                     m_BoundsArray[index] = itemData.bounds;
                     m_GroupIDsArray[index] = i;
-                    m_RenderIDsArray[index] = itemData.itemID;
+                    m_RenderIDsArray[index] = itemData.itemID;//对应的就是InfoData里面的信息
                     m_CullResultArray[index] = 1;//设置为1 为都显示状态
+                    m_LODLevelArray[index] = 3;//默认显示3级LOD
                     index++;
                 }
             }
@@ -89,19 +96,49 @@ namespace RenderGroupRenderer.Info
             m_CullResultBuffer.SetData(m_CullResultArray);
             
             rendererItemCount = index;
+        }
+
+        void InitPreTypeData(RenderInfoData renderInfoData)
+        {
+            int typeCount = renderInfoData.renderItems.Count;
+            CreateDataAndBuffer(typeCount, out m_LODDistanceBuffer, out m_LODDistanceArray);
+
+            for (int i = 0; i < renderInfoData.renderItems.Count; i++)
+            {
+                var renderItemInfo = renderInfoData.renderItems[i].data;
+                m_LODDistanceArray[i] = renderItemInfo.lodDistance;
+            }
+            
+            m_LODDistanceBuffer.SetData(m_LODDistanceArray);
+        }
+        
+        public void Dispose()
+        {
+            m_TransformBuffer.Dispose();
+            m_BoundsBuffer.Dispose();
+            m_GroupIDBuffer.Dispose();
+            m_ArgsBuffer.Dispose();
+            m_CullResultBuffer.Dispose();
+            m_LODDistanceBuffer.Dispose();
+        }
+        
+        void CreateBuffer(RenderGroupData renderGroupData, RenderInfoData renderInfoData)
+        {
+            //每个物体的信息
+            InitPreItemData(renderGroupData);
+            
+            //每个类型的信息
+            InitPreTypeData(renderInfoData);
             
             int argsLastIndex = 0;
             int argsLength = 5 * renderInfoData.renderItems.Count;
-            if (m_System.useLOD)
-            {
-                argsLength *= 3;
-            }
+            argsLength *= Define.LOD_COUNT;
 
             m_Args = new uint[argsLength];
             m_ArgsBuffer = new ComputeBuffer(m_Args.Length, sizeof(uint), ComputeBufferType.IndirectArguments);
             for (int i = 0; i < renderInfoData.renderItems.Count; i++)
             {
-                if (m_System.useLOD)
+                // if (m_System.useLOD)
                 {
                     var lod0Info = renderInfoData.renderItems[i].data.lod0Info;
                     var lod1Info = renderInfoData.renderItems[i].data.lod1Info;
@@ -125,16 +162,16 @@ namespace RenderGroupRenderer.Info
                     m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // base vertex location
                     m_Args[argsLastIndex++] = 0; //mesh.GetBaseVertex(0); // start instance location
                 }
-                else
-                {
-                    var lod0Info = renderInfoData.renderItems[i].data.lod0Info;
-                    var mesh = lod0Info.mesh;
-                    m_Args[argsLastIndex++] = mesh.GetIndexCount(0); // index count per instance
-                    m_Args[argsLastIndex++] = 0;
-                    m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // start index location
-                    m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // base vertex location
-                    m_Args[argsLastIndex++] = 0; //mesh.GetBaseVertex(0); // start instance location
-                }
+                // else
+                // {
+                //     var lod0Info = renderInfoData.renderItems[i].data.lod0Info;
+                //     var mesh = lod0Info.mesh;
+                //     m_Args[argsLastIndex++] = mesh.GetIndexCount(0); // index count per instance
+                //     m_Args[argsLastIndex++] = 0;
+                //     m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // start index location
+                //     m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // base vertex location
+                //     m_Args[argsLastIndex++] = 0; //mesh.GetBaseVertex(0); // start instance location
+                // }
             }
 
             // LogArgs();
@@ -149,22 +186,12 @@ namespace RenderGroupRenderer.Info
                 Debug.LogError($"{i} : {m_Args[i]}");
             }
         }
-
-
+        
         public void UpdateMaterial(MaterialPropertyBlock mpb)
         {
             mpb.SetBuffer("_TransformBuffer", m_TransformBuffer);
             mpb.SetBuffer("_GroupIDBuffer", m_GroupIDBuffer);
             mpb.SetBuffer("_IndirectArgsBuffer", m_ArgsBuffer);
-        }
-
-        public void Dispose()
-        {
-            m_TransformBuffer.Dispose();
-            m_BoundsBuffer.Dispose();
-            m_GroupIDBuffer.Dispose();
-            m_ArgsBuffer.Dispose();
-            m_CullResultBuffer.Dispose();
         }
     }
 }

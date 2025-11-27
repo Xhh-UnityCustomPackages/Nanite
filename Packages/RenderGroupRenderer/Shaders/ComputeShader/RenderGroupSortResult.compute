@@ -5,6 +5,7 @@
 //Item数据
 StructuredBuffer<uint> _RenderIDBuffer;
 StructuredBuffer<uint> _CullResultBuffer;
+StructuredBuffer<uint> _LODLevelBuffer;
 //Args数据
 StructuredBuffer<IndirectArgs> _IndirectArgsBuffer;   //ArgsBuffer
 int _ItemCount;//总物体数量
@@ -25,15 +26,14 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     if (isVisible)
     {
         int renderID = _RenderIDBuffer[itemIndex];
-        IndirectArgs args = _IndirectArgsBuffer[renderID];
+        int lod = _LODLevelBuffer[itemIndex];
+        IndirectArgs args = _IndirectArgsBuffer[renderID * LOD_LEVEL + lod];
 
         // 使用原子操作增加计数，并获取增加前的值
         uint originalCount;
-        InterlockedAdd(_InsertCountBuffer[renderID], 1, originalCount);
+        InterlockedAdd(_InsertCountBuffer[renderID * LOD_LEVEL + lod], 1, originalCount);
 
         int offsetIndex = args.startLocation + originalCount;
         _SortIDBuffer[offsetIndex] = itemIndex;
     }
-    
-    //假定传入的Group已经做过视锥剔除了 那么这个阶段主要做的就是Item级别的剔除
 }

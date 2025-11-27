@@ -1,17 +1,24 @@
 #pragma kernel CSMain
+// #pragma kernel CSMainLOD
 
 #include "../Library/GPUInstanceDefine.hlsl"
+#include "../Library/LOD.hlsl"
 
-//视锥剔除
+//相机参数
+float3 _CameraPosition;
 StructuredBuffer<float4> _FrustumPlanesBuffer; // 每个平面用float4表示，xyz为法线，w为距离
 //Item数据
 StructuredBuffer<Bounds> _BoundsBuffer;
 StructuredBuffer<uint> _RenderIDBuffer;
 RWStructuredBuffer<uint> _CullResultBuffer;
+RWStructuredBuffer<uint> _LODLevelBuffer;
+//Type数据
+StructuredBuffer<float3> _LODDistanceBuffer;
+
 //Args数据
 RWStructuredBuffer<IndirectArgs> _IndirectArgsBuffer;   //ArgsBuffer
 int _ItemCount;//总物体数量
-int _RenderCount;//总类型数量
+int _RenderTypeCount;//总类型数量
 
 
 // 更精确的包围盒测试
@@ -34,7 +41,7 @@ bool AABBInFrustum(float3 center, float3 extents)
     return true;
 }
 
-
+//假定的Group已经做过视锥剔除了 那么这个阶段主要做的就是Item级别的剔除
 [numthreads(64, 1, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
@@ -62,17 +69,39 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     bool isVisible = AABBInFrustum(bounds.position, bounds.extents);
     _CullResultBuffer[itemIndex] = isVisible;
+
+    //距离剔除
+    int typeID = _RenderIDBuffer[itemIndex];
+    float3 lodDistance = _LODDistanceBuffer[typeID];
+    float distanceFromCamera = distance(_CameraPosition, bounds.position);
+    if (distanceFromCamera >= lodDistance.z)
+    {
+        isVisible = false;
+    }
+
+    _CullResultBuffer[itemIndex] = isVisible;
+    
     if (isVisible)
     {
-        int renderID = _RenderIDBuffer[itemIndex];
-        InterlockedAdd(_IndirectArgsBuffer[renderID].numInstances, 1);
+        //再来判断LOD
+        int lodLevel = CalcLODLevel(distanceFromCamera, lodDistance);
+        _LODLevelBuffer[itemIndex] = lodLevel;
+       
+        InterlockedAdd(_IndirectArgsBuffer[typeID * LOD_LEVEL + lodLevel].numInstances, 1);
+
+        //后续LODLevel后移
+        for (int i = lodLevel+1; i < LOD_LEVEL; i++)
+        {
+            InterlockedAdd(_IndirectArgsBuffer[typeID * LOD_LEVEL + i].startLocation, 1);
+        }
 
         //后续的其他render 后移
-        for (uint l = renderID + 1; l < _RenderCount; l++)
+        for (uint l = typeID + 1; l < _RenderTypeCount; l++)
         {
-            InterlockedAdd(_IndirectArgsBuffer[l].startLocation, 1);
+            //各个LOD级别一起后移
+            InterlockedAdd(_IndirectArgsBuffer[l * LOD_LEVEL + 0].startLocation, 1);
+            InterlockedAdd(_IndirectArgsBuffer[l * LOD_LEVEL + 1].startLocation, 1);
+            InterlockedAdd(_IndirectArgsBuffer[l * LOD_LEVEL + 2].startLocation, 1);
         }
     }
-    
-    //假定传入的Group已经做过视锥剔除了 那么这个阶段主要做的就是Item级别的剔除
 }
