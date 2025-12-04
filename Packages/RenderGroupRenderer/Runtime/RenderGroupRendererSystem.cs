@@ -7,6 +7,7 @@ using Sirenix.OdinInspector;
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Serialization;
 using ReadOnly = Sirenix.OdinInspector.ReadOnlyAttribute;
 
 namespace RenderGroupRenderer
@@ -14,7 +15,7 @@ namespace RenderGroupRenderer
     public class RenderGroupRendererSystem : MonoBehaviour
     {
         [Header("Settings")]
-       
+        public bool enableRender = true;
         [Header("Data")] 
         public RenderGroupData renderGroupData;
         public RenderInfoData renderInfoData;
@@ -163,21 +164,15 @@ namespace RenderGroupRenderer
 
         private void Update()
         {
-            m_CullingModule?.OnUpdate();
+            m_CullingModule.OnLateUpdate();
         }
         
         private void LateUpdate()
         {
-            m_CullingModule.OnLateUpdate();
-            //填充回RenderGroup
-            // for (int i = 0; i < m_RenderGroups.Length; i++)
-            // {
-            //     m_RenderGroups[i].SetCullingResult(m_CullingModule.CullingResultNativeArray[i]);
-            // }
-            //剔除的Group直接设置ArgBuffer count -1 
-            //这样就在发起Indirect绘制的时候 提前判断 减少空draw
-
             m_RendererModule.OnLateUpdate();
+            
+            if(enableRender)
+                m_RendererModule.Renderer();
         }
 
         private void OnDrawGizmos()

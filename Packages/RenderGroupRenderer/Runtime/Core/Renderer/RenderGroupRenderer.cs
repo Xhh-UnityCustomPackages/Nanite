@@ -51,7 +51,6 @@ namespace RenderGroupRenderer
         {
             GPUCulling();
             Sort();
-            Renderer();
 
             // Log();
         }
@@ -135,7 +134,7 @@ namespace RenderGroupRenderer
             
         }
 
-        private void Renderer()
+        public void Renderer()
         {
             //TODO 如何杜绝空数量的Draw
             
