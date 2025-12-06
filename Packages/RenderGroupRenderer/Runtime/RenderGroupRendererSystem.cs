@@ -12,6 +12,7 @@ using ReadOnly = Sirenix.OdinInspector.ReadOnlyAttribute;
 
 namespace RenderGroupRenderer
 {
+    //需要做个收集器 交给RendererGraph去渲染
     public class RenderGroupRendererSystem : MonoBehaviour
     {
         [Header("Settings")]
@@ -26,6 +27,7 @@ namespace RenderGroupRenderer
         
         [Header("Culling")] 
         public Camera CullingCamera;
+        [ShowInInspector, HideInEditorMode] 
         private CullingModule m_CullingModule;
         private RenderGroupRenderer m_RendererModule;
         [ShowInInspector, HideInEditorMode] 
@@ -164,6 +166,7 @@ namespace RenderGroupRenderer
 
         private void Update()
         {
+            m_CullingModule.OnUpdate();
             m_CullingModule.OnLateUpdate();
         }
         

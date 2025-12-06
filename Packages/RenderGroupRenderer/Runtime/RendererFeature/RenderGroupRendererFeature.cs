@@ -12,6 +12,8 @@ namespace RenderGroupRenderer
         
         private HiZDepthGeneratorPass m_HiZPass;
 
+        public static RTHandle occluderDepthPyramid { get; set; }
+
         public override void Create()
         {
 #if UNITY_EDITOR
@@ -23,10 +25,13 @@ namespace RenderGroupRenderer
 #endif
 
             m_HiZPass ??= new(m_FeatureData);
+            m_HiZPass.renderPassEvent = RenderPassEvent.BeforeRenderingOpaques;
         }
 
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
         {
+            occluderDepthPyramid = m_HiZPass.occluderDepthPyramid;
+            
             //只为主相机生成HiZ
             if (renderingData.cameraData.cameraType == CameraType.Game)
             {

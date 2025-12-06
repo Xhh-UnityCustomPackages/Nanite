@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Sirenix.OdinInspector;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
@@ -7,18 +8,22 @@ namespace RenderGroupRenderer
 {
     public class CullingModule
     {
+        [System.Serializable]
         struct FFrustumCullingFlags
         {
-            bool bShouldVisibilityCull;
-            bool bUseCustomCulling;
-            bool bUseSphereTestFirst;
-            bool bUseFastIntersect;
-            bool bUseVisibilityOctree;
-            bool bHasHiddenPrimitives;
-            bool bHasShowOnlyPrimitives;
+            public bool bShouldVisibilityCull;
+            // public bool bUseCustomCulling;
+            public bool bUseSphereTestFirst;
+            public bool bUseFastIntersect;
+            public bool bUseVisibilityOctree;
+            // public bool bHasHiddenPrimitives;
+            // public bool bHasShowOnlyPrimitives;
         }
 
-
+        [ShowInInspector]
+        private FFrustumCullingFlags Flags;
+        private FConvexVolume ConvexVolume;
+        
         private CameraData m_CameraData;
 
         private NativeArray<Bounds> m_CullingBoundsNativeArray;
@@ -34,6 +39,9 @@ namespace RenderGroupRenderer
         {
             m_System = system;
             m_CameraData = new CameraData();
+            ConvexVolume = m_CameraData.GetCullingFrustum();
+
+            Flags.bShouldVisibilityCull = true;
         }
 
         public void SetCullingCamera(Camera camera)
@@ -58,14 +66,25 @@ namespace RenderGroupRenderer
             m_CullingBoundsNativeArray.Dispose();
             m_CullingResultNativeArray.Dispose();
             m_CameraData.Dispose();
+            ConvexVolume.Dispose();
         }
 
         public void OnUpdate()
         {
+            ConvexVolume.Update(m_CameraData.cullingPlanes);
         }
 
         public void OnLateUpdate()
         {
+            if (!Flags.bShouldVisibilityCull)
+            {
+                for (int i = 0; i < m_System.infoModule.cullResult.Length; i++)
+                {
+                    m_System.infoModule.cullResult[i] = 1;
+                }
+                return;
+            }
+
             if (m_CameraData.IsCameraDirty())
             {
                 m_CameraData.CalculateCameraData();
@@ -145,7 +164,7 @@ namespace RenderGroupRenderer
             if (length <= 0)
                 return;
 
-            var cullJobs = RenderGroupCulling.CreateJob(m_CameraData.cullingPlaneArray, m_CullingBoundsNativeArray, m_CullingGroupIDsNativeArray, m_CullingResultNativeArray);
+            var cullJobs = RenderGroupCulling.CreateJob(ConvexVolume.cullingPlaneArray, m_CullingBoundsNativeArray, m_CullingGroupIDsNativeArray, m_CullingResultNativeArray);
             var job = cullJobs.Schedule(length, length);
             job.Complete();
             
@@ -164,6 +183,11 @@ namespace RenderGroupRenderer
 
         public void OnDrawGizmos()
         {
+            if (!Flags.bShouldVisibilityCull)
+            {
+                return;
+            }
+
             foreach (var node in m_VisibleNodes)
             {
                 Gizmos.DrawWireCube(node.Bounds.center, node.Bounds.size);
@@ -177,5 +201,6 @@ namespace RenderGroupRenderer
             //     Gizmos.DrawWireCube(bounds.center, bounds.size);
             // }
         }
+
     }
 }

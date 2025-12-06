@@ -4,6 +4,8 @@
 #include "../Library/GPUInstanceDefine.hlsl"
 #include "../Library/LOD.hlsl"
 
+#include "Packages/rendergrouprenderer/Runtime/OcclusionCulling/OcclusionCullingCommon.hlsl"
+
 //相机参数
 float3 _CameraPosition;
 StructuredBuffer<float4> _FrustumPlanesBuffer; // 每个平面用float4表示，xyz为法线，w为距离
@@ -17,8 +19,8 @@ StructuredBuffer<float3> _LODDistanceBuffer;
 
 //Args数据
 RWStructuredBuffer<IndirectArgs> _IndirectArgsBuffer;   //ArgsBuffer
-int _ItemCount;//总物体数量
-int _RenderTypeCount;//总类型数量
+uint _ItemCount;//总物体数量
+uint _RenderTypeCount;//总类型数量
 
 
 // 更精确的包围盒测试
@@ -45,7 +47,7 @@ bool AABBInFrustum(float3 center, float3 extents)
 [numthreads(64, 1, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
-    int itemIndex = id.x;
+    uint itemIndex = id.x;
     
     if (itemIndex >= _ItemCount)
         return;
@@ -67,7 +69,11 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     
     Bounds bounds = _BoundsBuffer[itemIndex];
 
-    bool isVisible = AABBInFrustum(bounds.position, bounds.extents);
+    bool isVisible = true;
+
+    if (isVisible) isVisible = AABBInFrustum(bounds.position, bounds.extents);
+    if (isVisible) isVisible = IsOcclusionVisible(bounds.position, 1, 1, 1);
+    
     _CullResultBuffer[itemIndex] = isVisible;
 
     //距离剔除

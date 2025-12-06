@@ -13,10 +13,8 @@ namespace RenderGroupRenderer
         
         private bool m_IsFirst;
         private Plane[] m_CullingPlanes = new Plane[6];
-        private NativeArray<Plane> m_CullingPlanesNativeArray;
         
         public Plane[] cullingPlanes => m_CullingPlanes;
-        public NativeArray<Plane> cullingPlaneArray => m_CullingPlanesNativeArray;
 
         public void SetCamera(Camera camera)
         {
@@ -25,7 +23,6 @@ namespace RenderGroupRenderer
 
         public void Dispose()
         {
-            m_CullingPlanesNativeArray.Dispose();
         }
         
         public void CalculateCameraData()
@@ -34,14 +31,15 @@ namespace RenderGroupRenderer
                 return;
 
             GeometryUtility.CalculateFrustumPlanes(camera, m_CullingPlanes);
-            if (!m_CullingPlanesNativeArray.IsCreated)
-                m_CullingPlanesNativeArray = new NativeArray<Plane>(m_CullingPlanes.Length, Allocator.Persistent);
-            for (int i = 0; i < m_CullingPlanes.Length; i++)
-            {
-                m_CullingPlanesNativeArray[i] = m_CullingPlanes[i];
-            }
         }
-        
+
+        public FConvexVolume GetCullingFrustum()
+        {
+            FConvexVolume volume = new FConvexVolume();
+            volume.Init();
+            return volume;
+        }
+
         public bool IsCameraDirty()
         {
             return IsCameraDirty(camera);
