@@ -28,7 +28,7 @@ namespace RenderGroupRenderer
             m_ShowState = showState;
         }
 
-        public void OnDrawGizmos()
+        public void OnDrawGizmos(CullingModule cullingModule)
         {
             switch (m_ShowState)
             {
@@ -37,11 +37,17 @@ namespace RenderGroupRenderer
                 case ShowState.PassFrustumCulling: Gizmos.color = Color.green; break;
             }
             
-            Gizmos.DrawWireCube(bounds.Origin, 2 * bounds.BoxExtent);
+            if(cullingModule.Flags.bUseSphereTestFirst)
+                Gizmos.DrawWireSphere(bounds.Origin, bounds.SphereRadius);
+            else
+                Gizmos.DrawWireCube(bounds.Origin, 2 * bounds.BoxExtent);
 
             for (int i = 0; i < items.Length; i++)
-            {
-                Gizmos.DrawWireCube(items[i].bounds.Origin, 2 * items[i].bounds.BoxExtent);
+            {   
+                if(cullingModule.Flags.bUseSphereTestFirst)
+                    Gizmos.DrawWireSphere(items[i].bounds.Origin, items[i].bounds.SphereRadius);
+                else
+                    Gizmos.DrawWireCube(items[i].bounds.Origin, 2 * items[i].bounds.BoxExtent);
             }
         }
     }

@@ -93,8 +93,8 @@ namespace RenderGroupRenderer
 
         public void Dispose()
         {
-            if (Planes.IsCreated)
-                Planes.Dispose();
+            if (Planes.IsCreated) Planes.Dispose();
+            if (PermutedPlanes.IsCreated) PermutedPlanes.Dispose();
         }
         
 

@@ -31,6 +31,20 @@ namespace RenderGroupRenderer
         
         /** Holds the radius of the bounding sphere. */
         public float SphereRadius;
+
+        public FBoxSphereBounds(Bounds bounds)
+        {
+            this.Origin = bounds.center;
+            this.BoxExtent = bounds.extents;
+            this.SphereRadius = BoxExtent.magnitude * 2;
+        }
+
+        public FBoxSphereBounds(Vector3 Origin, Vector3 BoxExtent)
+        {
+            this.Origin = Origin;
+            this.BoxExtent = BoxExtent;
+            this.SphereRadius = BoxExtent.magnitude * 2;
+        }
         
         public Vector3 min
         {
@@ -62,6 +76,7 @@ namespace RenderGroupRenderer
         {
             this.Encapsulate(bounds.Origin - bounds.BoxExtent);
             this.Encapsulate(bounds.Origin + bounds.BoxExtent);
+            this.SphereRadius = BoxExtent.magnitude * 2;
         }
     }
 }

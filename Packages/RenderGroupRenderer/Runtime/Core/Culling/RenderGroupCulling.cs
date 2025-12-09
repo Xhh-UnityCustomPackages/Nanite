@@ -10,6 +10,7 @@ namespace RenderGroupRenderer
     public struct RenderGroupCulling : IJobParallelFor
     {
         public static RenderGroupCulling CreateJob(
+            FFrustumCullingFlags Flags,
             FConvexVolume convexVolume,
             NativeArray<FBoxSphereBounds> bounds,
             NativeArray<int> groupIDs,
@@ -17,16 +18,18 @@ namespace RenderGroupRenderer
             )
         {
             RenderGroupCulling job = new RenderGroupCulling();
-            job.convexVolume = convexVolume;
+            job.Flags = Flags;
+            job.ViewCullingFrustum = convexVolume;
             job.groupIDs = groupIDs;
             job.AllBounds = bounds;
             job.Results = results;
             return job;
         }
     
+        [ReadOnly] public FFrustumCullingFlags Flags;
         [ReadOnly] public NativeArray<int> groupIDs;
         [ReadOnly] public NativeArray<FBoxSphereBounds> AllBounds; //全部物体的包围盒
-        [ReadOnly] public FConvexVolume convexVolume; //摄像机视锥平面
+        [ReadOnly] public FConvexVolume ViewCullingFrustum; //摄像机视锥平面
         
         // 剔除结果
         public NativeArray<bool> Results;
@@ -36,16 +39,17 @@ namespace RenderGroupRenderer
         {
             var itemBounds = AllBounds[index];
             
-            bool isFrustumCulled = IsFrustumCulled(itemBounds);
-            
-            bool show = !isFrustumCulled;
-            
-            Results[index] = show;
+            Results[index] = IsPrimitiveVisible(itemBounds);
         }
 
-        bool IsFrustumCulled(FBoxSphereBounds itemBounds)
+        bool IsPrimitiveVisible(FBoxSphereBounds Bounds)
         {
-            return !convexVolume.IntersectBox(itemBounds.Origin, itemBounds.BoxExtent);
+            if (Flags.bUseSphereTestFirst && !ViewCullingFrustum.IntersectSphere(Bounds.Origin, Bounds.SphereRadius))
+            {
+                return false;
+            }
+            
+            return ViewCullingFrustum.IntersectBox(Bounds.Origin, Bounds.BoxExtent);
         }
     }
 }

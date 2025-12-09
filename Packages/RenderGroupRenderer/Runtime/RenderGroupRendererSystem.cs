@@ -96,8 +96,7 @@ namespace RenderGroupRenderer
                 for (int j = 0; j < groupData.itemDatas.Count; j++)
                 {
                     var itemData = groupData.itemDatas[j];
-                    FBoxSphereBounds itemBounds = new FBoxSphereBounds();
-                    itemBounds.SetMinMax(itemData.bounds.min, itemData.bounds.max);
+                    FBoxSphereBounds itemBounds = new FBoxSphereBounds(itemData.bounds);
                     RenderGroupItem renderGroupItem = new RenderGroupItem(itemBounds, itemData.itemID);
                     renderGroupItem.groupID = i;
                     renderGroupItem.itemID = itemID++;
@@ -193,7 +192,7 @@ namespace RenderGroupRenderer
             {
                 for (int i = 0; i < m_RenderGroups.Length; i++)
                 {
-                    m_RenderGroups[i].OnDrawGizmos();
+                    m_RenderGroups[i].OnDrawGizmos(m_CullingModule);
                 }
             }
         }

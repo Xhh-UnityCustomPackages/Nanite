@@ -57,9 +57,9 @@ namespace RenderGroupRenderer
             return node;
         }
 
-        public void FrustumCull(FConvexVolume convexVolume, List<BVHNode> visibleNodes, uint[] cullResultArray, ref int itemCount)
+        public void FrustumCull(FFrustumCullingFlags Flags, FConvexVolume convexVolume, List<BVHNode> visibleNodes, uint[] cullResultArray, ref int itemCount)
         {
-            m_Root.FrustumCull(convexVolume, visibleNodes, ref cullResultArray, ref itemCount);
+            m_Root.FrustumCull(Flags, convexVolume, visibleNodes, ref cullResultArray, ref itemCount);
         }
 
         public void DrawTargetDepth(int displayDepth)

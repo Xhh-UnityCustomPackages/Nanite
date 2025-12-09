@@ -6,22 +6,21 @@ using UnityEngine;
 
 namespace RenderGroupRenderer
 {
+    [System.Serializable]
+    public struct FFrustumCullingFlags
+    {
+        public bool bShouldVisibilityCull;
+        // public bool bUseCustomCulling;
+        public bool bUseSphereTestFirst;
+        public bool bUseFastIntersect;
+        public bool bUseVisibilityOctree;
+        // public bool bHasHiddenPrimitives;
+        // public bool bHasShowOnlyPrimitives;
+    }
+    
     public class CullingModule
     {
-        [System.Serializable]
-        struct FFrustumCullingFlags
-        {
-            public bool bShouldVisibilityCull;
-            // public bool bUseCustomCulling;
-            public bool bUseSphereTestFirst;
-            public bool bUseFastIntersect;
-            public bool bUseVisibilityOctree;
-            // public bool bHasHiddenPrimitives;
-            // public bool bHasShowOnlyPrimitives;
-        }
-
-        [ShowInInspector]
-        private FFrustumCullingFlags Flags;
+        public FFrustumCullingFlags Flags;
         private FConvexVolume ConvexVolume;
         
         private CameraData m_CameraData;
@@ -114,7 +113,7 @@ namespace RenderGroupRenderer
 
             m_VisibleNodes.Clear();
             m_AfterBVHCullingRenderItemCount = 0;
-            m_BVHTree.FrustumCull(ConvexVolume, m_VisibleNodes, m_System.infoModule.cullResult, ref m_AfterBVHCullingRenderItemCount);
+            m_BVHTree.FrustumCull(Flags, ConvexVolume, m_VisibleNodes, m_System.infoModule.cullResult, ref m_AfterBVHCullingRenderItemCount);
             
             //更新 info剔除结果
             
@@ -165,7 +164,7 @@ namespace RenderGroupRenderer
             if (length <= 0)
                 return;
 
-            var cullJobs = RenderGroupCulling.CreateJob(ConvexVolume, m_CullingBoundsNativeArray, m_CullingGroupIDsNativeArray, m_CullingResultNativeArray);
+            var cullJobs = RenderGroupCulling.CreateJob(Flags, ConvexVolume, m_CullingBoundsNativeArray, m_CullingGroupIDsNativeArray, m_CullingResultNativeArray);
             var job = cullJobs.Schedule(length, length);
             job.Complete();
             
@@ -188,11 +187,15 @@ namespace RenderGroupRenderer
             {
                 return;
             }
-
+            
             foreach (var node in m_VisibleNodes)
             {
-                Gizmos.DrawWireCube(node.Bounds.Origin, 2 * node.Bounds.BoxExtent);
+                if (Flags.bUseSphereTestFirst)
+                    Gizmos.DrawWireSphere(node.Bounds.Origin, node.Bounds.SphereRadius);
+                else
+                    Gizmos.DrawWireCube(node.Bounds.Origin, 2 * node.Bounds.BoxExtent);
             }
+           
             // Gizmos.DrawFrustum(c);
             // for (int i = 0; i < m_CullingBoundsNativeArray.Length; i++)
             // {

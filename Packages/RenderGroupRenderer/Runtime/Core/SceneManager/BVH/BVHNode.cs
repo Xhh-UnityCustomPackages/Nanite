@@ -65,7 +65,7 @@ namespace RenderGroupRenderer
             }
         }
 
-        public void FrustumCull(FConvexVolume convexVolume, List<BVHNode> visibleNodes, ref uint[] cullResultArray, ref int itemCount)
+        public void FrustumCull(FFrustumCullingFlags Flags, FConvexVolume convexVolume, List<BVHNode> visibleNodes, ref uint[] cullResultArray, ref int itemCount)
         {
             //这个是Debug逻辑 可以移除或者用宏开启
             if (IsLeaf)
@@ -76,12 +76,24 @@ namespace RenderGroupRenderer
                 }
             }
             
-            
-            if (!convexVolume.IntersectBox(m_Bounds.Origin, m_Bounds.BoxExtent))
+            if(Flags.bUseSphereTestFirst)
             {
-                SetGroupCullResult(ref cullResultArray, false);
-                return;
+                //先用球体包围盒剔除
+                if (!convexVolume.IntersectSphere(m_Bounds.Origin, m_Bounds.SphereRadius))
+                {
+                    SetGroupCullResult(ref cullResultArray, false);
+                    return;
+                }
             }
+            else
+            {
+                if (!convexVolume.IntersectBox(m_Bounds.Origin, m_Bounds.BoxExtent))
+                {
+                    SetGroupCullResult(ref cullResultArray, false);
+                    return;
+                }
+            }
+           
             
             //过了视锥剔除
             if (IsLeaf)
@@ -93,8 +105,8 @@ namespace RenderGroupRenderer
             }
             else
             {
-                left.FrustumCull(convexVolume, visibleNodes, ref cullResultArray, ref itemCount);
-                right.FrustumCull(convexVolume, visibleNodes, ref cullResultArray, ref itemCount);
+                left.FrustumCull(Flags, convexVolume, visibleNodes, ref cullResultArray, ref itemCount);
+                right.FrustumCull(Flags, convexVolume, visibleNodes, ref cullResultArray, ref itemCount);
             }
         }
 

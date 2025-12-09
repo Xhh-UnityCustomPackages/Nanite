@@ -80,8 +80,7 @@ namespace RenderGroupRenderer.Info
                 {
                     var itemData = groupData.itemDatas[j];
                     m_TransformsArray[index] = itemData.transform.GetTransformMatrix();
-                    var bounds = new FBoxSphereBounds();
-                    bounds.SetMinMax(itemData.bounds.min, itemData.bounds.max);
+                    var bounds = new FBoxSphereBounds(itemData.bounds);
                     m_BoundsArray[index] = bounds;
                     m_GroupIDsArray[index] = i;
                     m_RenderIDsArray[index] = itemData.itemID;//对应的就是InfoData里面的信息
