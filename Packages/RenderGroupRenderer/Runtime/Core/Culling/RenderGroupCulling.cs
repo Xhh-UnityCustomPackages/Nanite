@@ -13,21 +13,18 @@ namespace RenderGroupRenderer
             FFrustumCullingFlags Flags,
             FConvexVolume convexVolume,
             NativeArray<FBoxSphereBounds> bounds,
-            NativeArray<int> groupIDs,
             NativeArray<bool> results
             )
         {
             RenderGroupCulling job = new RenderGroupCulling();
             job.Flags = Flags;
             job.ViewCullingFrustum = convexVolume;
-            job.groupIDs = groupIDs;
             job.AllBounds = bounds;
             job.Results = results;
             return job;
         }
     
         [ReadOnly] public FFrustumCullingFlags Flags;
-        [ReadOnly] public NativeArray<int> groupIDs;
         [ReadOnly] public NativeArray<FBoxSphereBounds> AllBounds; //全部物体的包围盒
         [ReadOnly] public FConvexVolume ViewCullingFrustum; //摄像机视锥平面
         

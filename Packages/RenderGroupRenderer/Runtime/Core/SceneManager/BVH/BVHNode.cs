@@ -85,15 +85,12 @@ namespace RenderGroupRenderer
                     return;
                 }
             }
-            else
+
+            if (!convexVolume.IntersectBox(m_Bounds.Origin, m_Bounds.BoxExtent))
             {
-                if (!convexVolume.IntersectBox(m_Bounds.Origin, m_Bounds.BoxExtent))
-                {
-                    SetGroupCullResult(ref cullResultArray, false);
-                    return;
-                }
+                SetGroupCullResult(ref cullResultArray, false);
+                return;
             }
-           
             
             //过了视锥剔除
             if (IsLeaf)

@@ -37,17 +37,14 @@ namespace RenderGroupRenderer
                 case ShowState.PassFrustumCulling: Gizmos.color = Color.green; break;
             }
             
-            if(cullingModule.Flags.bUseSphereTestFirst)
-                Gizmos.DrawWireSphere(bounds.Origin, bounds.SphereRadius);
-            else
-                Gizmos.DrawWireCube(bounds.Origin, 2 * bounds.BoxExtent);
+         
+            // Gizmos.DrawWireSphere(bounds.Origin, bounds.SphereRadius);
+            Gizmos.DrawWireCube(bounds.Origin, 2 * bounds.BoxExtent);
 
             for (int i = 0; i < items.Length; i++)
             {   
-                if(cullingModule.Flags.bUseSphereTestFirst)
-                    Gizmos.DrawWireSphere(items[i].bounds.Origin, items[i].bounds.SphereRadius);
-                else
-                    Gizmos.DrawWireCube(items[i].bounds.Origin, 2 * items[i].bounds.BoxExtent);
+                // Gizmos.DrawWireSphere(items[i].bounds.Origin, items[i].bounds.SphereRadius);
+                Gizmos.DrawWireCube(items[i].bounds.Origin, 2 * items[i].bounds.BoxExtent);
             }
         }
     }

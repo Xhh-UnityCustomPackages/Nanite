@@ -1,5 +1,7 @@
 using System.Runtime.InteropServices;
 using Sirenix.OdinInspector;
+using ReadOnly = Sirenix.OdinInspector.ReadOnlyAttribute;
+using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -10,13 +12,13 @@ namespace RenderGroupRenderer.Info
     {
         //按照Item排列的
         private ComputeBuffer m_TransformBuffer; // 存放local to world
-        [ShowInInspector, ReadOnly] private float4x4[] m_TransformsArray;
+        [ShowInInspector, ReadOnly] private NativeArray<float4x4> m_TransformsArray;
         private ComputeBuffer m_BoundsBuffer;
-        [ShowInInspector, ReadOnly] private FBoxSphereBounds[] m_BoundsArray;
+        [ShowInInspector, ReadOnly] private NativeArray<FBoxSphereBounds> m_BoundsArray;
         private ComputeBuffer m_GroupIDBuffer;
-        [ShowInInspector, ReadOnly] private int[] m_GroupIDsArray;
+        [ShowInInspector, ReadOnly] private NativeArray<int> m_GroupIDsArray;
         private ComputeBuffer m_RenderIDBuffer;
-        [ShowInInspector, ReadOnly] private uint[] m_RenderIDsArray;
+        [ShowInInspector, ReadOnly] private NativeArray<uint> m_RenderIDsArray;
         private ComputeBuffer m_CullResultBuffer;
         [ShowInInspector, ReadOnly] private uint[] m_CullResultArray;
         private ComputeBuffer m_LODLevelBuffer;
@@ -24,7 +26,7 @@ namespace RenderGroupRenderer.Info
         
         //根据RenderID拿到的数据
         private ComputeBuffer m_LODDistanceBuffer;
-        [ShowInInspector, ReadOnly] private Vector3[] m_LODDistanceArray;
+        [ShowInInspector, ReadOnly] private NativeArray<Vector3> m_LODDistanceArray;
         
         
         
@@ -33,6 +35,7 @@ namespace RenderGroupRenderer.Info
 
         public uint[] cullResult => m_CullResultArray;
         public uint[] args => m_Args;
+        
         public ComputeBuffer argsBuffer => m_ArgsBuffer;
         public ComputeBuffer boundsBuffer => m_BoundsBuffer;
         public ComputeBuffer rendererIDBuffer => m_RenderIDBuffer;
@@ -61,6 +64,12 @@ namespace RenderGroupRenderer.Info
             computeBuffer = new ComputeBuffer(count, Marshal.SizeOf<T>());
             dataArray = new T[count];
         }
+        
+        void CreateDataAndBuffer<T>(int count, out ComputeBuffer computeBuffer, out NativeArray<T> dataArray) where T : struct
+        {
+            computeBuffer = new ComputeBuffer(count, Marshal.SizeOf<T>());
+            dataArray = new NativeArray<T>(count, Allocator.Persistent);
+        }
 
         void InitPreItemData(RenderGroupData renderGroupData)
         {
@@ -85,7 +94,7 @@ namespace RenderGroupRenderer.Info
                     m_GroupIDsArray[index] = i;
                     m_RenderIDsArray[index] = itemData.itemID;//对应的就是InfoData里面的信息
                     m_CullResultArray[index] = 1;//设置为1 为都显示状态
-                    m_LODLevelArray[index] = 3;//默认显示3级LOD
+                    m_LODLevelArray[index] = 3;//默认显示都有3级LOD
                     index++;
                 }
             }
