@@ -92,7 +92,7 @@ namespace RenderGroupRenderer
 
             m_FrustumPlanesBuffer.SetData(m_CullingModule.CameraData.cullingPlanes);
             m_CullingCS.SetBuffer(kernel, "_FrustumPlanesBuffer", m_FrustumPlanesBuffer);
-            m_CullingCS.SetTexture(kernel, "_OccluderDepthPyramid", RenderGroupRendererFeature.occluderDepthPyramid);
+            // m_CullingCS.SetTexture(kernel, "_OccluderDepthPyramid", RenderGroupRendererFeature.occluderDepthPyramid);
             
             m_SortCS.GetKernelThreadGroupSizes(kernel, out var threadGroupSizeX, out _, out _);
             int threadGroups = Mathf.CeilToInt(totalCount / (float)threadGroupSizeX);

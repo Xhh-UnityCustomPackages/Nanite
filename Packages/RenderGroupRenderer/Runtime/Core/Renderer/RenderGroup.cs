@@ -11,7 +11,7 @@ namespace RenderGroupRenderer
     public class RenderGroup
     {
         public int groupID;
-        public Bounds bounds;
+        public FBoxSphereBounds bounds;
         public RenderGroupItem[] items;
        
         private ShowState m_ShowState;
@@ -37,11 +37,11 @@ namespace RenderGroupRenderer
                 case ShowState.PassFrustumCulling: Gizmos.color = Color.green; break;
             }
             
-            Gizmos.DrawWireCube(bounds.center, bounds.size);
+            Gizmos.DrawWireCube(bounds.Origin, 2 * bounds.BoxExtent);
 
             for (int i = 0; i < items.Length; i++)
             {
-                Gizmos.DrawWireCube(items[i].bounds.center, items[i].bounds.size);
+                Gizmos.DrawWireCube(items[i].bounds.Origin, 2 * items[i].bounds.BoxExtent);
             }
         }
     }
@@ -54,10 +54,10 @@ namespace RenderGroupRenderer
     {
         public int groupID;
         public int itemID;
-        public Bounds bounds;
+        public FBoxSphereBounds bounds;
         public uint renderID;
         
-        public RenderGroupItem(Bounds bounds, uint renderID)
+        public RenderGroupItem(FBoxSphereBounds bounds, uint renderID)
         {
             this.bounds = bounds;
             this.renderID = renderID;

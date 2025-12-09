@@ -26,7 +26,7 @@ namespace RenderGroupRenderer
         
         private CameraData m_CameraData;
 
-        private NativeArray<Bounds> m_CullingBoundsNativeArray;
+        private NativeArray<FBoxSphereBounds> m_CullingBoundsNativeArray;
         private NativeArray<int> m_CullingGroupIDsNativeArray;
         private NativeArray<bool> m_CullingResultNativeArray;
 
@@ -71,7 +71,7 @@ namespace RenderGroupRenderer
 
         public void OnUpdate()
         {
-            ConvexVolume.Update(m_CameraData.cullingPlanes);
+            
         }
 
         public void OnLateUpdate()
@@ -88,6 +88,7 @@ namespace RenderGroupRenderer
             if (m_CameraData.IsCameraDirty())
             {
                 m_CameraData.CalculateCameraData();
+                ConvexVolume.Update(m_CameraData.cullingPlanes);
                 //场景BVH剔除
                 BVHCulling();
                 
@@ -113,7 +114,7 @@ namespace RenderGroupRenderer
 
             m_VisibleNodes.Clear();
             m_AfterBVHCullingRenderItemCount = 0;
-            m_BVHTree.FrustumCull(m_CameraData.cullingPlanes, m_VisibleNodes, m_System.infoModule.cullResult, ref m_AfterBVHCullingRenderItemCount);
+            m_BVHTree.FrustumCull(ConvexVolume, m_VisibleNodes, m_System.infoModule.cullResult, ref m_AfterBVHCullingRenderItemCount);
             
             //更新 info剔除结果
             
@@ -128,14 +129,14 @@ namespace RenderGroupRenderer
                     m_CullingBoundsNativeArray.Dispose();
                     m_CullingResultNativeArray.Dispose();
                     m_CullingGroupIDsNativeArray.Dispose();
-                    m_CullingBoundsNativeArray = new NativeArray<Bounds>(m_AfterBVHCullingRenderItemCount, Allocator.Persistent);
+                    m_CullingBoundsNativeArray = new NativeArray<FBoxSphereBounds>(m_AfterBVHCullingRenderItemCount, Allocator.Persistent);
                     m_CullingGroupIDsNativeArray = new NativeArray<int>(m_AfterBVHCullingRenderItemCount, Allocator.Persistent);
                     m_CullingResultNativeArray = new NativeArray<bool>(m_AfterBVHCullingRenderItemCount, Allocator.Persistent);
                 }
             }
             else
             {
-                m_CullingBoundsNativeArray = new NativeArray<Bounds>(m_AfterBVHCullingRenderItemCount, Allocator.Persistent);
+                m_CullingBoundsNativeArray = new NativeArray<FBoxSphereBounds>(m_AfterBVHCullingRenderItemCount, Allocator.Persistent);
                 m_CullingGroupIDsNativeArray = new NativeArray<int>(m_AfterBVHCullingRenderItemCount, Allocator.Persistent);
                 m_CullingResultNativeArray = new NativeArray<bool>(m_AfterBVHCullingRenderItemCount, Allocator.Persistent);
             }
@@ -164,7 +165,7 @@ namespace RenderGroupRenderer
             if (length <= 0)
                 return;
 
-            var cullJobs = RenderGroupCulling.CreateJob(ConvexVolume.cullingPlaneArray, m_CullingBoundsNativeArray, m_CullingGroupIDsNativeArray, m_CullingResultNativeArray);
+            var cullJobs = RenderGroupCulling.CreateJob(ConvexVolume, m_CullingBoundsNativeArray, m_CullingGroupIDsNativeArray, m_CullingResultNativeArray);
             var job = cullJobs.Schedule(length, length);
             job.Complete();
             
@@ -190,7 +191,7 @@ namespace RenderGroupRenderer
 
             foreach (var node in m_VisibleNodes)
             {
-                Gizmos.DrawWireCube(node.Bounds.center, node.Bounds.size);
+                Gizmos.DrawWireCube(node.Bounds.Origin, 2 * node.Bounds.BoxExtent);
             }
             // Gizmos.DrawFrustum(c);
             // for (int i = 0; i < m_CullingBoundsNativeArray.Length; i++)

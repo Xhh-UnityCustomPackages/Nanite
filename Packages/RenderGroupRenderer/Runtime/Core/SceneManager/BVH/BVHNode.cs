@@ -6,16 +6,16 @@ namespace RenderGroupRenderer
 {
     public class BVHNode
     {
-        private Bounds m_Bounds;
+        private FBoxSphereBounds m_Bounds;
         public BVHNode left = null;
         public BVHNode right = null;
         private List<RenderGroup> m_Objects;
         
-        public Bounds Bounds => m_Bounds;
+        public FBoxSphereBounds Bounds => m_Bounds;
         public bool IsLeaf => left == null && right == null;
         public List<RenderGroup> Objects => m_Objects;
         
-        public BVHNode(Bounds bounds)
+        public BVHNode(FBoxSphereBounds bounds)
         {
             m_Bounds = bounds;
         }
@@ -43,13 +43,13 @@ namespace RenderGroupRenderer
         
         void DrawGizmos()
         {
-            Gizmos.DrawWireCube(this.m_Bounds.center, this.m_Bounds.size);
+            Gizmos.DrawWireCube(this.m_Bounds.Origin, this.m_Bounds.BoxExtent * 2);
             Gizmos.DrawSphere(this.m_Bounds.min, 0.1f);
             Gizmos.DrawSphere(this.m_Bounds.max, 0.1f);
         }
         #endregion
 
-        void SetGroupCullResult(uint[] cullResultArray, bool show)
+        void SetGroupCullResult(ref uint[] cullResultArray, bool show)
         {
             if (m_Objects == null)
             {
@@ -65,7 +65,7 @@ namespace RenderGroupRenderer
             }
         }
 
-        public void FrustumCull(Plane[] frustumPlanes, List<BVHNode> visibleNodes, ref uint[] cullResultArray, ref int itemCount)
+        public void FrustumCull(FConvexVolume convexVolume, List<BVHNode> visibleNodes, ref uint[] cullResultArray, ref int itemCount)
         {
             //这个是Debug逻辑 可以移除或者用宏开启
             if (IsLeaf)
@@ -74,14 +74,12 @@ namespace RenderGroupRenderer
                 {
                     m_Objects[i].SetCPUCullingResult(RenderGroup.ShowState.BVHCulling);
                 }
-                
             }
             
-            if (!GeometryUtility.TestPlanesAABB(frustumPlanes, m_Bounds))
+            
+            if (!convexVolume.IntersectBox(m_Bounds.Origin, m_Bounds.BoxExtent))
             {
-                
-                SetGroupCullResult(cullResultArray, false);
-                
+                SetGroupCullResult(ref cullResultArray, false);
                 return;
             }
             
@@ -91,12 +89,12 @@ namespace RenderGroupRenderer
                 visibleNodes.Add(this);
                 itemCount += m_Objects.Count;
                 
-                SetGroupCullResult(cullResultArray, true);
+                SetGroupCullResult(ref cullResultArray, true);
             }
             else
             {
-                left.FrustumCull(frustumPlanes, visibleNodes, ref cullResultArray, ref itemCount);
-                right.FrustumCull(frustumPlanes, visibleNodes, ref cullResultArray, ref itemCount);
+                left.FrustumCull(convexVolume, visibleNodes, ref cullResultArray, ref itemCount);
+                right.FrustumCull(convexVolume, visibleNodes, ref cullResultArray, ref itemCount);
             }
         }
 

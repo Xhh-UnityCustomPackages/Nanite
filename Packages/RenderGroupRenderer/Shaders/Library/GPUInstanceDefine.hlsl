@@ -16,6 +16,16 @@ struct Bounds
     float3 extents;
 };
 
+struct FBoxSphereBounds
+{
+    /** Holds the origin of the bounding box and sphere. */
+    float3 Origin;
+    /** Holds the extent of the bounding box, which is half the size of the box in 3D space */
+    float3 BoxExtent;
+    /** Holds the radius of the bounding sphere. */
+    float SphereRadius;
+};
+
 #define LOD_LEVEL 3
 
 #endif

@@ -21,7 +21,7 @@ namespace RenderGroupRenderer
             if (objects.Count == 0) return null;
             
             // 计算所有物体的总包围盒
-            Bounds totalBounds = objects[0].bounds;
+            var totalBounds = objects[0].bounds;
             foreach (var obj in objects)
             {
                 totalBounds.Encapsulate(obj.bounds);
@@ -37,13 +37,13 @@ namespace RenderGroupRenderer
             }
         
             // 选择分割轴（选择最长的轴）
-            Vector3 size = totalBounds.size;
+            Vector3 size = 2 * totalBounds.BoxExtent;
             int splitAxis = (size.x > size.y && size.x > size.z) ? 0 : 
                 (size.y > size.z) ? 1 : 2;
         
             // 按中心点排序
             objects.Sort((a, b) => 
-                a.bounds.center[splitAxis].CompareTo(b.bounds.center[splitAxis]));
+                a.bounds.Origin[splitAxis].CompareTo(b.bounds.Origin[splitAxis]));
         
             // 分割物体列表
             int mid = objects.Count / 2;
@@ -57,9 +57,9 @@ namespace RenderGroupRenderer
             return node;
         }
 
-        public void FrustumCull(Plane[] frustumPlanes, List<BVHNode> visibleNodes, uint[] cullResultArray, ref int itemCount)
+        public void FrustumCull(FConvexVolume convexVolume, List<BVHNode> visibleNodes, uint[] cullResultArray, ref int itemCount)
         {
-            m_Root.FrustumCull(frustumPlanes, visibleNodes, ref cullResultArray, ref itemCount);
+            m_Root.FrustumCull(convexVolume, visibleNodes, ref cullResultArray, ref itemCount);
         }
 
         public void DrawTargetDepth(int displayDepth)

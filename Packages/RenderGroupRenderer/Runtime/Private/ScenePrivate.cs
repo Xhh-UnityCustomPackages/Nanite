@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace RenderGroupRenderer
@@ -30,5 +31,37 @@ namespace RenderGroupRenderer
         
         /** Holds the radius of the bounding sphere. */
         public float SphereRadius;
+        
+        public Vector3 min
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] get => this.Origin - this.BoxExtent;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] set => this.SetMinMax(value, this.max);
+        }
+
+        public Vector3 max
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] get => this.Origin + this.BoxExtent;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] set => this.SetMinMax(this.min, value);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetMinMax(Vector3 min, Vector3 max)
+        {
+            this.BoxExtent = (max - min) * 0.5f;
+            this.Origin = min + this.BoxExtent;
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Encapsulate(Vector3 point)
+        {
+            this.SetMinMax(Vector3.Min(this.min, point), Vector3.Max(this.max, point));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Encapsulate(FBoxSphereBounds bounds)
+        {
+            this.Encapsulate(bounds.Origin - bounds.BoxExtent);
+            this.Encapsulate(bounds.Origin + bounds.BoxExtent);
+        }
     }
 }

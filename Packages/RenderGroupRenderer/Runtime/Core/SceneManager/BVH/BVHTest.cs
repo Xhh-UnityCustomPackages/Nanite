@@ -31,13 +31,16 @@ namespace RenderGroupRenderer
             {
                 var groupData = groupDatas[i];
                 RenderGroup renderGroup = new RenderGroup();
-                renderGroup.bounds = groupData.bounds;
+                var bounds = new FBoxSphereBounds();
+                bounds.SetMinMax(groupData.bounds.min, groupData.bounds.max);
+                renderGroup.bounds = bounds;
                 renderGroup.items = new RenderGroupItem[groupData.itemDatas.Count];
                 for (int j = 0; j < groupData.itemDatas.Count; j++)
                 {
                     var itemData = groupData.itemDatas[j];
-                    
-                    RenderGroupItem renderGroupItem = new RenderGroupItem(itemData.bounds, itemData.itemID);
+                    var itemBounds = new FBoxSphereBounds();
+                    itemBounds.SetMinMax(itemData.bounds.min, itemData.bounds.max);
+                    RenderGroupItem renderGroupItem = new RenderGroupItem(itemBounds, itemData.itemID);
                     renderGroup.items[j] = renderGroupItem;
                 }
 

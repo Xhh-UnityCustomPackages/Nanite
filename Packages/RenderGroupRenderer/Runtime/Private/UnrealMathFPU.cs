@@ -1,4 +1,3 @@
-using System;
 using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Mathematics;
@@ -18,62 +17,74 @@ namespace RenderGroupRenderer
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float3 VectorAbs(in float3 Vec)
         {
-            float3 Vec2;
-            Vec2.x = Math.Abs(Vec.x);
-            Vec2.y = Math.Abs(Vec.y);
-            Vec2.z = Math.Abs(Vec.z);
-            return Vec2;
+            return math.abs(Vec);
+            // float3 Vec2;
+            // Vec2.x = math.abs(Vec.x);
+            // Vec2.y = math.abs(Vec.y);
+            // Vec2.z = math.abs(Vec.z);
+            // return Vec2;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float4 VectorAbs(in float4 Vec)
         {
-            float4 Vec2;
-            Vec2.x = Math.Abs(Vec.x);
-            Vec2.y = Math.Abs(Vec.y);
-            Vec2.z = Math.Abs(Vec.z);
-            Vec2.w = Math.Abs(Vec.w);
-            return Vec2;
+            return math.abs(Vec);
+            // float4 Vec2;
+            // Vec2.x = math.abs(Vec.x);
+            // Vec2.y = math.abs(Vec.y);
+            // Vec2.z = math.abs(Vec.z);
+            // Vec2.w = math.abs(Vec.w);
+            // return Vec2;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float4 VectorMultiply(in float4 Vec1, in float4 Vec2)
         {
-            float4 Vec;
-            Vec.x = Vec1.x * Vec2.x;
-            Vec.y = Vec1.y * Vec2.y;
-            Vec.z = Vec1.z * Vec2.z;
-            Vec.w = Vec1.w * Vec2.w;
-            return Vec;
+            return Vec1 * Vec2;
+            // float4 Vec;
+            // Vec.x = Vec1.x * Vec2.x;
+            // Vec.y = Vec1.y * Vec2.y;
+            // Vec.z = Vec1.z * Vec2.z;
+            // Vec.w = Vec1.w * Vec2.w;
+            // return Vec;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float4 VectorMultiplyAdd(in float4 Vec1, in float4 Vec2, in float4 Vec3)
         {
-            float4 Vec;
-            Vec.x = Vec1.x * Vec2.x + Vec3.x;
-            Vec.y = Vec1.y * Vec2.y + Vec3.y;
-            Vec.z = Vec1.z * Vec2.z + Vec3.z;
-            Vec.w = Vec1.w * Vec2.w + Vec3.w;
-            return Vec;
+            return Vec1 * Vec2 + Vec3;
+            // float4 Vec;
+            // Vec.x = Vec1.x * Vec2.x + Vec3.x;
+            // Vec.y = Vec1.y * Vec2.y + Vec3.y;
+            // Vec.z = Vec1.z * Vec2.z + Vec3.z;
+            // Vec.w = Vec1.w * Vec2.w + Vec3.w;
+            // return Vec;
         }
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float4 VectorAdd(in float4 Vec1, in float4 Vec2)
+        {
+            return Vec1 + Vec2;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float4 VectorSubtract(in float4 Vec1, in float4 Vec2)
         {
-            float4 Vec;
-            Vec.x = Vec1.x - Vec2.x;
-            Vec.y = Vec1.y - Vec2.y;
-            Vec.z = Vec1.z - Vec2.z;
-            Vec.w = Vec1.w - Vec2.w;
-            return Vec;
+            return Vec1 - Vec2;
+            // float4 Vec;
+            // Vec.x = Vec1.x - Vec2.x;
+            // Vec.y = Vec1.y - Vec2.y;
+            // Vec.z = Vec1.z - Vec2.z;
+            // Vec.w = Vec1.w - Vec2.w;
+            // return Vec;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool VectorAnyGreaterThan(in float4 Vec1, in float4 Vec2)
         {
+            return math.any(Vec1 > Vec2);
             // Note: Bitwise OR:ing all results together to avoid branching.
-            return (Vec1.x > Vec2.x) | (Vec1.y > Vec2.y) | (Vec1.z > Vec2.z) | (Vec1.w > Vec2.w);
+            // return (Vec1.x > Vec2.x) | (Vec1.y > Vec2.y) | (Vec1.z > Vec2.z) | (Vec1.w > Vec2.w);
         }
     }
 }

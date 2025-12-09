@@ -10,7 +10,7 @@
 float3 _CameraPosition;
 StructuredBuffer<float4> _FrustumPlanesBuffer; // 每个平面用float4表示，xyz为法线，w为距离
 //Item数据
-StructuredBuffer<Bounds> _BoundsBuffer;
+StructuredBuffer<FBoxSphereBounds> _BoundsBuffer;
 StructuredBuffer<uint> _RenderIDBuffer;
 RWStructuredBuffer<uint> _CullResultBuffer;
 RWStructuredBuffer<uint> _LODLevelBuffer;
@@ -57,7 +57,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     {
         return;
     }
-
+    
     //TODO
     bool isGroupVisible = true;
     if (!isGroupVisible)
@@ -67,19 +67,19 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         return;
     }
     
-    Bounds bounds = _BoundsBuffer[itemIndex];
+    FBoxSphereBounds bounds = _BoundsBuffer[itemIndex];
 
     bool isVisible = true;
 
-    if (isVisible) isVisible = AABBInFrustum(bounds.position, bounds.extents);
-    if (isVisible) isVisible = IsOcclusionVisible(bounds.position, 1, 1, 1);
+    if (isVisible) isVisible = AABBInFrustum(bounds.Origin, bounds.BoxExtent);
+    // if (isVisible) isVisible = IsOcclusionVisible(bounds.Origin, 1, 1, 1);
     
     _CullResultBuffer[itemIndex] = isVisible;
-
+    
     //距离剔除
     int typeID = _RenderIDBuffer[itemIndex];
     float3 lodDistance = _LODDistanceBuffer[typeID];
-    float distanceFromCamera = distance(_CameraPosition, bounds.position);
+    float distanceFromCamera = distance(_CameraPosition, bounds.Origin);
     if (distanceFromCamera >= lodDistance.z)
     {
         isVisible = false;

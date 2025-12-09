@@ -12,7 +12,7 @@ namespace RenderGroupRenderer.Info
         private ComputeBuffer m_TransformBuffer; // 存放local to world
         [ShowInInspector, ReadOnly] private float4x4[] m_TransformsArray;
         private ComputeBuffer m_BoundsBuffer;
-        [ShowInInspector, ReadOnly] private Bounds[] m_BoundsArray;
+        [ShowInInspector, ReadOnly] private FBoxSphereBounds[] m_BoundsArray;
         private ComputeBuffer m_GroupIDBuffer;
         [ShowInInspector, ReadOnly] private int[] m_GroupIDsArray;
         private ComputeBuffer m_RenderIDBuffer;
@@ -80,7 +80,9 @@ namespace RenderGroupRenderer.Info
                 {
                     var itemData = groupData.itemDatas[j];
                     m_TransformsArray[index] = itemData.transform.GetTransformMatrix();
-                    m_BoundsArray[index] = itemData.bounds;
+                    var bounds = new FBoxSphereBounds();
+                    bounds.SetMinMax(itemData.bounds.min, itemData.bounds.max);
+                    m_BoundsArray[index] = bounds;
                     m_GroupIDsArray[index] = i;
                     m_RenderIDsArray[index] = itemData.itemID;//对应的就是InfoData里面的信息
                     m_CullResultArray[index] = 1;//设置为1 为都显示状态

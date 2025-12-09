@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Sirenix.OdinInspector;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Mathematics;
@@ -14,8 +15,6 @@ namespace RenderGroupRenderer
     {
         private NativeArray<float4> Planes;
         private NativeArray<float4> PermutedPlanes;
-        
-        public NativeArray<float4> cullingPlaneArray => Planes;
 
         public void Init()
         {
@@ -84,7 +83,10 @@ namespace RenderGroupRenderer
         {
             for (int i = 0; i < cullingPlanes.Length; i++)
             {
-                Planes[i] = new float4(cullingPlanes[i].normal.x, cullingPlanes[i].normal.y, cullingPlanes[i].normal.z, cullingPlanes[i].distance);
+                // Unity的GeometryUtility.CalculateFrustumPlanes返回的平面法线指向内部
+                // Unreal的ConvexVolume算法假设法线指向外部
+                // 因此需要：反转法线方向 
+                Planes[i] = new float4(-cullingPlanes[i].normal.x, -cullingPlanes[i].normal.y, -cullingPlanes[i].normal.z, cullingPlanes[i].distance);
             }
             Init();
         }
@@ -143,7 +145,7 @@ namespace RenderGroupRenderer
                 }
             }
 
-            return false;
+            return true;
         }
 
         public bool IntersectBox(float3 Origin, float3 Extent)
