@@ -1,4 +1,5 @@
 using System.Linq;
+using Unity.Collections;
 using UnityEngine;
 
 namespace RenderGroupRenderer
@@ -12,7 +13,7 @@ namespace RenderGroupRenderer
         // private TOctree2<RenderGroup> m_Octree;
         // public TOctree2<RenderGroup> Octree => m_Octree;
         
-        public void Init(RenderGroup[] m_RenderGroups)
+        public void Init(NativeArray<RenderGroup> m_RenderGroups)
         {
             
             m_BVHTree = new(m_RenderGroups.ToList());

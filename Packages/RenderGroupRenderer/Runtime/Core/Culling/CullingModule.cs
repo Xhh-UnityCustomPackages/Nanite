@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Sirenix.OdinInspector;
 using Unity.Collections;
 using Unity.Jobs;
@@ -122,10 +123,6 @@ namespace RenderGroupRenderer
         //     Profiler.EndSample();
         // }
 
-        void Func(uint node, RenderGroup group)
-        {
-        }
-
         bool CullOcttreeNode(uint ParentNodeIndex, uint NodeIndex, FOctreeNodeContext contenxt)
         {
             // If the parent node is completely contained there is no need to test containment
@@ -161,17 +158,22 @@ namespace RenderGroupRenderer
             //更新 info剔除结果
             Profiler.EndSample();
         }
-
+        
         void CPUPreItemCulling()
         {
             if (!Flags.bUseVisibilityOctree)
             {
-                m_VisibleNodes.Clear();
-                foreach (var renderGroup in m_System.renderGroups)
+                Profiler.BeginSample("CullingModule Reset Visible Nodes");
+                if (m_VisibleNodes.Length != m_System.renderGroups.Length)
                 {
-                    renderGroup.SetCPUCullingResult(RenderGroup.ShowState.BVHCulling);
-                    m_VisibleNodes.Add(renderGroup.groupID);
+                    m_VisibleNodes.Clear();
+                    foreach (var renderGroup in m_System.renderGroups)
+                    {
+                        renderGroup.SetCPUCullingResult(RenderGroup.ShowState.BVHCulling);
+                        m_VisibleNodes.Add(renderGroup.groupID);
+                    }
                 }
+                Profiler.EndSample();
             }
             
             if (m_VisibleNodes.Length <= 0)
@@ -193,35 +195,40 @@ namespace RenderGroupRenderer
             //     cullingBoundsNativeArray[i] = renderGroup.bounds;
             //     cullingResultNativeArray[i] = false;
             // }
-            
             var prepareJobs = PrepareRenderGroupCulling.CreateJob(m_VisibleNodes, m_System.groupBoundsArray, cullingGroupIDsNativeArray, cullingBoundsNativeArray, cullingResultNativeArray);
             var preparejob = prepareJobs.Schedule(m_VisibleNodes.Length, 32);
             preparejob.Complete();
             
             Profiler.EndSample();
-            int length = cullingBoundsNativeArray.Length;
 
+            Profiler.BeginSample("CullingModule Group Culling");
+            int length = cullingBoundsNativeArray.Length;
             var cullJobs = RenderGroupCulling.CreateJob(Flags, ConvexVolume, cullingBoundsNativeArray, cullingResultNativeArray);
             var job = cullJobs.Schedule(length, 32);
             job.Complete();
-            
+            Profiler.EndSample();
             
             Profiler.BeginSample("CullingModule Deal Group Culling Data");
             //读取Group剔除结果 直接设置GroupItem的剔除结果
-            for (int i = 0; i < cullingResultNativeArray.Length; i++)
-            {
-                bool result = cullingResultNativeArray[i];
-                var groupID = cullingGroupIDsNativeArray[i];
-                var renderGroup = m_System.renderGroups[groupID];
-                if(result)
-                    renderGroup.SetCPUCullingResult(RenderGroup.ShowState.PassBVHCulling);
-                m_System.renderGroups[groupID] = renderGroup;
-                var items = renderGroup.items;
-                for (int j = 0; j < items.Length; j++)
-                {
-                    m_System.infoModule.cullResult[items[j].itemID] = (uint)(result ? 1 : 0);
-                }
-            }
+            //这样写有GC问题 弃用
+            // Parallel.For(0, cullingResultNativeArray.Length,  index =>
+            // {
+            //     // bool result = cullingResultNativeArray[index];
+            //     // var groupID = cullingGroupIDsNativeArray[index];
+            //     // var renderGroup = m_System.renderGroups[groupID];
+            //     // if(result)
+            //     //     renderGroup.SetCPUCullingResult(RenderGroup.ShowState.PassBVHCulling);
+            //     // m_System.renderGroups[groupID] = renderGroup;
+            //     // for (int j = 0; j < renderGroup.itemCount; j++)
+            //     // {
+            //     //     var itemID = m_System.renderItems[renderGroup.itemStartIndex + j].itemID;
+            //     //     m_System.infoModule.cullResult[itemID] = (uint)(result ? 1 : 0);
+            //     // }
+            // });
+            
+            var afterJobs = AfterRenderGroupCulling.CreateJob(cullingGroupIDsNativeArray, cullingResultNativeArray, m_System.renderGroups, m_System.renderItems, m_System.infoModule.cullResult);
+            var afterjob = afterJobs.Schedule(length, 32);
+            afterjob.Complete();
             
             Profiler.EndSample();
 

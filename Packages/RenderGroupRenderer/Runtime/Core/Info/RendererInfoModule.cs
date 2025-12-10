@@ -12,28 +12,40 @@ namespace RenderGroupRenderer.Info
     {
         //按照Item排列的
         private ComputeBuffer m_TransformBuffer; // 存放local to world
-        [ShowInInspector, ReadOnly] private float4x4[] m_TransformsArray;
+        [ShowInInspector, ReadOnly] 
+        private float4x4[] m_TransformsArray;
+        
         private ComputeBuffer m_BoundsBuffer;
-        [ShowInInspector, ReadOnly] private FBoxSphereBounds[] m_BoundsArray;
+        [ShowInInspector, ReadOnly] 
+        private FBoxSphereBounds[] m_BoundsArray;
+        
         private ComputeBuffer m_GroupIDBuffer;
-        [ShowInInspector, ReadOnly] private int[] m_GroupIDsArray;
+        [ShowInInspector, ReadOnly] 
+        private int[] m_GroupIDsArray;
+        
         private ComputeBuffer m_RenderIDBuffer;
-        [ShowInInspector, ReadOnly] private uint[] m_RenderIDsArray;
+        [ShowInInspector, ReadOnly] 
+        private uint[] m_RenderIDsArray;
+        
         private ComputeBuffer m_CullResultBuffer;
-        [ShowInInspector, ReadOnly] private uint[] m_CullResultArray;
+        [ShowInInspector, ReadOnly, InlineButton("SyncData")] 
+        private uint[] m_CullResultArray;
+        private NativeArray<uint> m_CullResultNativeArray;
+        
         private ComputeBuffer m_LODLevelBuffer;
         private uint[] m_LODLevelArray;
         
         //根据RenderID拿到的数据
         private ComputeBuffer m_LODDistanceBuffer;
-        [ShowInInspector, ReadOnly] private NativeArray<Vector3> m_LODDistanceArray;
+        [ShowInInspector, ReadOnly] 
+        private Vector3[] m_LODDistanceArray;
         
         
         
         private ComputeBuffer m_ArgsBuffer;
         [ShowInInspector, ReadOnly] private uint[] m_Args;
 
-        public uint[] cullResult => m_CullResultArray;
+        public ref NativeArray<uint> cullResult => ref m_CullResultNativeArray;
         public uint[] args => m_Args;
         
         public ComputeBuffer argsBuffer => m_ArgsBuffer;
@@ -65,10 +77,11 @@ namespace RenderGroupRenderer.Info
             dataArray = new T[count];
         }
         
-        void CreateDataAndBuffer<T>(int count, out ComputeBuffer computeBuffer, out NativeArray<T> dataArray) where T : struct
+        void CreateDataAndBuffer<T>(int count, out ComputeBuffer computeBuffer, out T[] dataArray, out NativeArray<T> nativeArray) where T : struct
         {
             computeBuffer = new ComputeBuffer(count, Marshal.SizeOf<T>());
-            dataArray = new NativeArray<T>(count, Allocator.Persistent);
+            dataArray = new T[count];
+            nativeArray = new NativeArray<T>(count, Allocator.Persistent);
         }
 
         void InitPreItemData(RenderGroupData renderGroupData)
@@ -78,7 +91,7 @@ namespace RenderGroupRenderer.Info
             CreateDataAndBuffer(count, out m_BoundsBuffer, out m_BoundsArray);
             CreateDataAndBuffer(count, out m_GroupIDBuffer, out m_GroupIDsArray);
             CreateDataAndBuffer(count, out m_RenderIDBuffer, out m_RenderIDsArray);
-            CreateDataAndBuffer(count, out m_CullResultBuffer, out m_CullResultArray);
+            CreateDataAndBuffer(count, out m_CullResultBuffer, out m_CullResultArray, out m_CullResultNativeArray);
             CreateDataAndBuffer(count, out m_LODLevelBuffer, out m_LODLevelArray);
             
             int index = 0;
@@ -94,6 +107,7 @@ namespace RenderGroupRenderer.Info
                     m_GroupIDsArray[index] = i;
                     m_RenderIDsArray[index] = itemData.itemID;//对应的就是InfoData里面的信息
                     m_CullResultArray[index] = 1;//设置为1 为都显示状态
+                    m_CullResultNativeArray[index] = 1;
                     m_LODLevelArray[index] = 3;//默认显示都有3级LOD
                     index++;
                 }
@@ -148,40 +162,27 @@ namespace RenderGroupRenderer.Info
             m_ArgsBuffer = new ComputeBuffer(m_Args.Length, sizeof(uint), ComputeBufferType.IndirectArguments);
             for (int i = 0; i < renderInfoData.renderItems.Count; i++)
             {
-                // if (m_System.useLOD)
-                {
-                    var lod0Info = renderInfoData.renderItems[i].data.lod0Info;
-                    var lod1Info = renderInfoData.renderItems[i].data.lod1Info;
-                    var lod2Info = renderInfoData.renderItems[i].data.lod2Info;
-                    var mesh = lod0Info.mesh;
-                    m_Args[argsLastIndex++] = mesh.GetIndexCount(0); // index count per instance
-                    m_Args[argsLastIndex++] = 0;
-                    m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // start index location
-                    m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // base vertex location
-                    m_Args[argsLastIndex++] = 0; //mesh.GetBaseVertex(0); // start instance location
-                    mesh = lod1Info.mesh;
-                    m_Args[argsLastIndex++] = mesh.GetIndexCount(0); // index count per instance
-                    m_Args[argsLastIndex++] = 0;
-                    m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // start index location
-                    m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // base vertex location
-                    m_Args[argsLastIndex++] = 0; //mesh.GetBaseVertex(0); // start instance location
-                    mesh = lod2Info.mesh;
-                    m_Args[argsLastIndex++] = mesh.GetIndexCount(0); // index count per instance
-                    m_Args[argsLastIndex++] = 0;
-                    m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // start index location
-                    m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // base vertex location
-                    m_Args[argsLastIndex++] = 0; //mesh.GetBaseVertex(0); // start instance location
-                }
-                // else
-                // {
-                //     var lod0Info = renderInfoData.renderItems[i].data.lod0Info;
-                //     var mesh = lod0Info.mesh;
-                //     m_Args[argsLastIndex++] = mesh.GetIndexCount(0); // index count per instance
-                //     m_Args[argsLastIndex++] = 0;
-                //     m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // start index location
-                //     m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // base vertex location
-                //     m_Args[argsLastIndex++] = 0; //mesh.GetBaseVertex(0); // start instance location
-                // }
+                var lod0Info = renderInfoData.renderItems[i].data.lod0Info;
+                var lod1Info = renderInfoData.renderItems[i].data.lod1Info;
+                var lod2Info = renderInfoData.renderItems[i].data.lod2Info;
+                var mesh = lod0Info.mesh;
+                m_Args[argsLastIndex++] = mesh.GetIndexCount(0); // index count per instance
+                m_Args[argsLastIndex++] = 0;
+                m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // start index location
+                m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // base vertex location
+                m_Args[argsLastIndex++] = 0; //mesh.GetBaseVertex(0); // start instance location
+                mesh = lod1Info.mesh;
+                m_Args[argsLastIndex++] = mesh.GetIndexCount(0); // index count per instance
+                m_Args[argsLastIndex++] = 0;
+                m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // start index location
+                m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // base vertex location
+                m_Args[argsLastIndex++] = 0; //mesh.GetBaseVertex(0); // start instance location
+                mesh = lod2Info.mesh;
+                m_Args[argsLastIndex++] = mesh.GetIndexCount(0); // index count per instance
+                m_Args[argsLastIndex++] = 0;
+                m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // start index location
+                m_Args[argsLastIndex++] = mesh.GetIndexStart(0); // base vertex location
+                m_Args[argsLastIndex++] = 0; //mesh.GetBaseVertex(0); // start instance location
             }
 
             // LogArgs();
@@ -202,6 +203,16 @@ namespace RenderGroupRenderer.Info
             mpb.SetBuffer("_TransformBuffer", m_TransformBuffer);
             mpb.SetBuffer("_GroupIDBuffer", m_GroupIDBuffer);
             mpb.SetBuffer("_IndirectArgsBuffer", m_ArgsBuffer);
+        }
+
+        // [Button]
+        //将NativeArray的数据同步到普通数组中
+        void SyncData()
+        {
+            for (int i = 0; i < rendererItemCount; i++)
+            {
+                m_CullResultArray[i] = m_CullResultNativeArray[i];
+            }
         }
     }
 }

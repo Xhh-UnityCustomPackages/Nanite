@@ -42,13 +42,17 @@ namespace RenderGroupRenderer
         
         
         [ShowInInspector, ReadOnly]
-        private RenderGroup[] m_RenderGroups;
+        private NativeArray<RenderGroup> m_RenderGroups;
+
+        [ShowInInspector, ReadOnly] 
+        private NativeArray<RenderGroupItem> m_RenderItems;
         
         private NativeArray<FBoxSphereBounds> m_GroupBoundsArray;
         
         private RenderArgsItem[] m_RenderArgsItems;
         
-        public RenderGroup[] renderGroups => m_RenderGroups;
+        public ref NativeArray<RenderGroup> renderGroups => ref m_RenderGroups;
+        public ref NativeArray<RenderGroupItem> renderItems => ref m_RenderItems;
         public RendererInfoModule infoModule => m_InfoModule;
         public CullingModule cullingModule => m_CullingModule;
         public NativeArray<FBoxSphereBounds> groupBoundsArray => m_GroupBoundsArray;
@@ -87,7 +91,8 @@ namespace RenderGroupRenderer
         void CreateRenderGroup()
         {
             m_GroupBoundsArray = new NativeArray<FBoxSphereBounds>(renderGroupData.groupDatas.Count, Allocator.Persistent);
-            m_RenderGroups = new RenderGroup[renderGroupData.groupDatas.Count];
+            m_RenderGroups = new NativeArray<RenderGroup>(renderGroupData.groupDatas.Count, Allocator.Persistent);
+            m_RenderItems = new NativeArray<RenderGroupItem>(renderGroupData.totalCount, Allocator.Persistent);
             var groupDatas = renderGroupData.groupDatas;
             int itemID = 0;
             for (int i = 0; i < groupDatas.Count; i++)
@@ -98,14 +103,19 @@ namespace RenderGroupRenderer
                 FBoxSphereBounds bounds = new FBoxSphereBounds();
                 bounds.SetMinMax(groupData.bounds.min, groupData.bounds.max);
                 renderGroup.bounds = bounds;
-                renderGroup.items = new NativeArray<RenderGroupItem>(groupData.itemDatas.Count, Allocator.Persistent);
+                // renderGroup.items = new NativeArray<RenderGroupItem>(groupData.itemDatas.Count, Allocator.Persistent);
                 m_GroupBoundsArray[i] = bounds;
+                renderGroup.itemStartIndex = itemID;
+                renderGroup.itemCount = groupData.itemDatas.Count;
                 for (int j = 0; j < groupData.itemDatas.Count; j++)
                 {
                     var itemData = groupData.itemDatas[j];
                     FBoxSphereBounds itemBounds = new FBoxSphereBounds(itemData.bounds);
-                    RenderGroupItem renderGroupItem = new RenderGroupItem(itemBounds, itemData.itemID, i, itemID++);
-                    renderGroup.items[j] = renderGroupItem;
+                    RenderGroupItem renderGroupItem = new RenderGroupItem(itemBounds, itemData.itemID, i, itemID);
+                    // renderGroup.items[j] = renderGroupItem;
+                    m_RenderItems[itemID] = renderGroupItem;
+
+                    itemID++;
                 }
 
                 m_RenderGroups[i] = renderGroup;
@@ -173,7 +183,7 @@ namespace RenderGroupRenderer
 
         private void Update()
         {
-            m_CullingModule.OnUpdate();
+            // m_CullingModule.OnUpdate();
             m_CullingModule.OnLateUpdate();
         }
         
@@ -197,7 +207,7 @@ namespace RenderGroupRenderer
             {
                 for (int i = 0; i < m_RenderGroups.Length; i++)
                 {
-                    m_RenderGroups[i].OnDrawGizmos(m_CullingModule);
+                    m_RenderGroups[i].OnDrawGizmos();
                 }
             }
         }

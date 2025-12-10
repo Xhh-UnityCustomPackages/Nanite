@@ -50,7 +50,7 @@ namespace RenderGroupRenderer
         }
         #endregion
 
-        void SetGroupCullResult(ref uint[] cullResultArray, bool show)
+        void SetGroupCullResult(ref NativeArray<uint> cullResultArray, bool show)
         {
             if (m_Objects == null)
             {
@@ -59,14 +59,14 @@ namespace RenderGroupRenderer
 
             for (var i = 0; i < m_Objects.Count; i++)
             {
-                for (var j = 0; j < m_Objects[i].items.Length; j++)
+                for (var j = 0; j < m_Objects[i].itemCount; j++)
                 {
-                    cullResultArray[m_Objects[i].items[j].itemID] = (uint)(show ? 1 : 0);
+                    cullResultArray[m_Objects[i].itemStartIndex + j] = (uint)(show ? 1 : 0);
                 }
             }
         }
 
-        public void FrustumCull(FFrustumCullingFlags Flags, FConvexVolume convexVolume, NativeList<int> visibleNodes, ref uint[] cullResultArray)
+        public void FrustumCull(FFrustumCullingFlags Flags, FConvexVolume convexVolume, NativeList<int> visibleNodes, ref NativeArray<uint> cullResultArray)
         {
             //这个是Debug逻辑 可以移除或者用宏开启
             if (IsLeaf)

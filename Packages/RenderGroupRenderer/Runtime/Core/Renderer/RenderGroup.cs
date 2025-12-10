@@ -14,7 +14,8 @@ namespace RenderGroupRenderer
     {
         public int groupID;
         public FBoxSphereBounds bounds;
-        public NativeArray<RenderGroupItem> items;
+        public int itemStartIndex; 
+        public int itemCount;
        
         [ShowInInspector, Sirenix.OdinInspector.ReadOnly]
         private ShowState m_ShowState;
@@ -31,7 +32,7 @@ namespace RenderGroupRenderer
             m_ShowState = showState;
         }
 
-        public void OnDrawGizmos(CullingModule cullingModule)
+        public void OnDrawGizmos()
         {
             switch (m_ShowState)
             {
@@ -44,11 +45,11 @@ namespace RenderGroupRenderer
             // Gizmos.DrawWireSphere(bounds.Origin, bounds.SphereRadius);
             Gizmos.DrawWireCube(bounds.Origin, 2 * bounds.BoxExtent);
 
-            for (int i = 0; i < items.Length; i++)
-            {   
-                // Gizmos.DrawWireSphere(items[i].bounds.Origin, items[i].bounds.SphereRadius);
-                Gizmos.DrawWireCube(items[i].bounds.Origin, 2 * items[i].bounds.BoxExtent);
-            }
+            // for (int i = 0; i < items.Length; i++)
+            // {   
+            //     // Gizmos.DrawWireSphere(items[i].bounds.Origin, items[i].bounds.SphereRadius);
+            //     Gizmos.DrawWireCube(items[i].bounds.Origin, 2 * items[i].bounds.BoxExtent);
+            // }
         }
     }
 

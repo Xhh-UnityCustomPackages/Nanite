@@ -89,9 +89,48 @@ namespace RenderGroupRenderer
     [BurstCompile(CompileSynchronously = true)]
     public struct AfterRenderGroupCulling : IJobParallelFor
     {
+        public static AfterRenderGroupCulling CreateJob(
+            NativeArray<int> groupIDs,
+            NativeArray<bool> cullResults,
+            NativeArray<RenderGroup> renderGroups,
+            NativeArray<RenderGroupItem> renderItems,
+            NativeArray<uint> totalCullResult
+        )
+        {
+            AfterRenderGroupCulling job = new AfterRenderGroupCulling();
+            job.groupIDs = groupIDs;
+            job.cullResults = cullResults;
+            job.renderGroups = renderGroups;
+            job.renderItems = renderItems;
+            job.totalCullResult = totalCullResult;
+            return job;
+        }
+        
+        [ReadOnly] public NativeArray<int> groupIDs;
+        [ReadOnly] public NativeArray<bool> cullResults;
+        [ReadOnly] public NativeArray<RenderGroupItem> renderItems;
+        
+        public NativeArray<RenderGroup> renderGroups;
+        
+        // 允许跨工作块访问
+        [NativeDisableParallelForRestriction] 
+        public NativeArray<uint> totalCullResult;
+
         public void Execute(int index)
         {
+            bool result = cullResults[index];
+            var groupID = groupIDs[index];
+
+            var renderGroup = renderGroups[groupID];
+            if (result)
+                renderGroup.SetCPUCullingResult(RenderGroup.ShowState.PassBVHCulling);
+            renderGroups[groupID] = renderGroup;
             
+            for (int j = 0; j < renderGroup.itemCount; j++)
+            {
+                var itemID = renderItems[renderGroup.itemStartIndex + j].itemID;
+                totalCullResult[itemID] = (uint)(result ? 1 : 0);
+            }
         }
     }
 }

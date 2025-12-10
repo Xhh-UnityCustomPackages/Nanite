@@ -58,7 +58,7 @@ namespace RenderGroupRenderer
             return node;
         }
 
-        public void FrustumCull(FFrustumCullingFlags Flags, FConvexVolume convexVolume, NativeList<int> visibleNodes, uint[] cullResultArray)
+        public void FrustumCull(FFrustumCullingFlags Flags, FConvexVolume convexVolume, NativeList<int> visibleNodes, NativeArray<uint> cullResultArray)
         {
             m_Root.FrustumCull(Flags, convexVolume, visibleNodes, ref cullResultArray);
         }
