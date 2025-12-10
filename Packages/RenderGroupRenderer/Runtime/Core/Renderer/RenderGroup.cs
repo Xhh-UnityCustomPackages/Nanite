@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using Sirenix.OdinInspector;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -8,12 +10,13 @@ namespace RenderGroupRenderer
     /// 一系列聚合物体
     /// </summary>
     [System.Serializable]
-    public class RenderGroup
+    public struct RenderGroup
     {
         public int groupID;
         public FBoxSphereBounds bounds;
-        public RenderGroupItem[] items;
+        public NativeArray<RenderGroupItem> items;
        
+        [ShowInInspector, Sirenix.OdinInspector.ReadOnly]
         private ShowState m_ShowState;
 
         public enum ShowState
@@ -53,17 +56,19 @@ namespace RenderGroupRenderer
     /// 渲染的小分件 
     /// </summary>
     [System.Serializable]
-    public class RenderGroupItem
+    public struct RenderGroupItem
     {
         public int groupID;
         public int itemID;
         public FBoxSphereBounds bounds;
         public uint renderID;
-        
-        public RenderGroupItem(FBoxSphereBounds bounds, uint renderID)
+
+        public RenderGroupItem(FBoxSphereBounds bounds, uint renderID, int groupID, int itemID)
         {
             this.bounds = bounds;
             this.renderID = renderID;
+            this.groupID = groupID;
+            this.itemID = itemID;
         }
     }
 }

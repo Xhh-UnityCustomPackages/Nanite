@@ -8,9 +8,26 @@ using static RenderGroupRenderer.UnrealMathFPU;
 
 namespace RenderGroupRenderer
 {
-    /**
-    * Builds the permuted planes for SIMD fast clipping
-    */
+	public struct FOutcode
+	{
+		public bool bInside;
+		public bool bOutside;
+		
+		public FOutcode(bool bInInside, bool bInOutside)
+		{
+			bInside = bInInside;
+			bOutside = bInOutside;
+		}
+		
+		public void SetInside(bool bNewInside) { bInside = bNewInside; }
+		public void SetOutside(bool bNewOutside) { bOutside = bNewOutside; }
+		public bool GetInside()  { return bInside; }
+		public bool GetOutside()  { return bOutside; }
+	}
+
+	/**
+	* Builds the permuted planes for SIMD fast clipping
+	*/
     public struct FConvexVolume
     {
         private NativeArray<float4> Planes;
@@ -184,5 +201,64 @@ namespace RenderGroupRenderer
 
             return true;
         }
+
+        public FOutcode GetBoxIntersectionOutcode(float3 Origin, float3 Extent)
+        {
+	        FOutcode Result = new(true, false);
+
+
+	        // Load the origin & extent
+	        // Splat origin into 3 vectors
+	        float4 OrigX = VectorReplicate(Origin, 0);
+	        float4 OrigY = VectorReplicate(Origin, 1);
+	        float4 OrigZ = VectorReplicate(Origin, 2);
+	        // Splat extent into 3 vectors
+	        float4 ExtentX = VectorReplicate(Extent, 0);
+	        float4 ExtentY = VectorReplicate(Extent, 1);
+	        float4 ExtentZ = VectorReplicate(Extent, 2);
+	        // Splat the abs for the pushout calculation
+	        var AbsExt = VectorAbs(Extent);
+	        float4 AbsExtentX = VectorReplicate(AbsExt, 0);
+	        float4 AbsExtentY = VectorReplicate(AbsExt, 1);
+	        float4 AbsExtentZ = VectorReplicate(AbsExt, 2);
+	        // Since we are moving straight through get a pointer to the data
+	        // const FPlane* RESTRICT PermutedPlanePtr = (FPlane*)PermutedPlanes.GetData();
+	        // Process four planes at a time until we have < 4 left
+	        for (int Count = 0; Count < PermutedPlanes.Length; Count += 4)
+	        {
+		        // Load 4 planes that are already all Xs, Ys, ...
+		       var PlanesX = PermutedPlanes[Count + 0];
+		       var PlanesY = PermutedPlanes[Count + 1];
+		       var PlanesZ = PermutedPlanes[Count + 2];
+		       var PlanesW = PermutedPlanes[Count + 3];
+		       
+		        // Calculate the distance (x * x) + (y * y) + (z * z) - w
+		        float4 DistX = VectorMultiply(OrigX, PlanesX);
+		        float4 DistY = VectorMultiplyAdd(OrigY, PlanesY, DistX);
+		        float4 DistZ = VectorMultiplyAdd(OrigZ, PlanesZ, DistY);
+		        float4 Distance = VectorSubtract(DistZ, PlanesW);
+		        // Now do the push out FMath::Abs(x * x) + FMath::Abs(y * y) + FMath::Abs(z * z)
+		        float4 PushX = VectorMultiply(AbsExtentX, VectorAbs(PlanesX));
+		        float4 PushY = VectorMultiplyAdd(AbsExtentY, VectorAbs(PlanesY), PushX);
+		        float4 PushOut = VectorMultiplyAdd(AbsExtentZ, VectorAbs(PlanesZ), PushY);
+
+		        // Check for completely outside
+		        if (VectorAnyGreaterThan(Distance, PushOut))
+		        {
+			        Result.SetInside(false);
+			        Result.SetOutside(true);
+			        break;
+		        }
+
+		        // See if any part is outside
+		        if (VectorAnyGreaterThan(Distance, VectorNegate(PushOut)))
+		        {
+			        Result.SetOutside(true);
+		        }
+	        }
+
+	        return Result;
+        }
+        
     }
 }

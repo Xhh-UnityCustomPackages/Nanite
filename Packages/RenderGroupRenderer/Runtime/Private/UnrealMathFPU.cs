@@ -86,5 +86,12 @@ namespace RenderGroupRenderer
             // Note: Bitwise OR:ing all results together to avoid branching.
             // return (Vec1.x > Vec2.x) | (Vec1.y > Vec2.y) | (Vec1.z > Vec2.z) | (Vec1.w > Vec2.w);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float4 VectorNegate(in float4 Vec)
+        {
+            return -Vec;
+            // return new float4(-Vec.x, -Vec.y, -Vec.z, -Vec.w);
+        }
     }
 }

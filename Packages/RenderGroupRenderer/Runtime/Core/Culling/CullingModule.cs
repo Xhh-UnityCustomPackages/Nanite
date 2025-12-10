@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using Unity.Collections;
 using Unity.Jobs;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Profiling;
 
@@ -41,6 +42,7 @@ namespace RenderGroupRenderer
             ConvexVolume = m_CameraData.GetCullingFrustum();
 
             Flags.bShouldVisibilityCull = true;
+            Flags.bUseVisibilityOctree = false;
         }
 
         public void SetCullingCamera(Camera camera)
@@ -51,19 +53,24 @@ namespace RenderGroupRenderer
         #region Scene Culling 粗粒度剔除
 
         private BVHTree m_BVHTree;
-        private List<BVHNode> m_VisibleNodes = new ();
-        private int m_AfterBVHCullingRenderItemCount;
+        // private TOctree2<RenderGroup> m_Octree;
+        private NativeList<int> m_VisibleNodes = new (Allocator.Persistent);
         
         public void AddToBVHFrustumCull(BVHTree tree)
         {
             m_BVHTree = tree;
         }
+        // public void AddToSceneFrustumCull(TOctree2<RenderGroup> tree)
+        // {
+        //     m_Octree = tree;
+        // }
         #endregion
 
         public void Dispose()
         {
             m_CameraData.Dispose();
             ConvexVolume.Dispose();
+            m_VisibleNodes.Dispose();
         }
 
         public void OnUpdate()
@@ -86,12 +93,59 @@ namespace RenderGroupRenderer
             {
                 m_CameraData.CalculateCameraData();
                 ConvexVolume.Update(m_CameraData.cullingPlanes);
-                //场景BVH剔除
-                BVHCulling();
+                if (Flags.bUseVisibilityOctree)
+                {
+                    //场景BVH剔除
+                    BVHCulling();
+                }
                 
-                //逐RenderGroupItemData剔除
+                // CullOctree();
+                
                 CPUPreItemCulling();
             }
+        }
+
+        private FSceneBitArray OutVisibleNodes;
+        
+        // void CullOctree()
+        // {
+        //     if(m_Octree == null)
+        //         return;
+        //
+        //     if (OutVisibleNodes == null)
+        //         OutVisibleNodes = new();
+        //     OutVisibleNodes.Init(false, m_Octree.GetNumNodes() * 2);
+        //     
+        //     Profiler.BeginSample("CullingModule CullOctree");
+        //     
+        //     m_Octree.FindElementsWithPredicate(CullOcttreeNode, Func);
+        //     Profiler.EndSample();
+        // }
+
+        void Func(uint node, RenderGroup group)
+        {
+        }
+
+        bool CullOcttreeNode(uint ParentNodeIndex, uint NodeIndex, FOctreeNodeContext contenxt)
+        {
+            // If the parent node is completely contained there is no need to test containment
+            if (ParentNodeIndex != FOctreeElementId2.INDEX_NONE && !OutVisibleNodes[(ParentNodeIndex * 2) + 1])
+            {
+                OutVisibleNodes[NodeIndex * 2] = true;
+                OutVisibleNodes[NodeIndex * 2 + 1] = false;
+                return true;
+            }
+                    
+            bool bIntersects = false;
+            bIntersects = ConvexVolume.IntersectBox(contenxt.Bounds.Center, contenxt.Bounds.Extent);
+                    
+            if (bIntersects)
+            {
+                OutVisibleNodes[NodeIndex * 2] = true;
+                OutVisibleNodes[NodeIndex * 2 + 1] = ConvexVolume.GetBoxIntersectionOutcode(contenxt.Bounds.Center, contenxt.Bounds.Extent).GetOutside();
+            }
+                    
+            return bIntersects;
         }
 
         void BVHCulling()
@@ -100,16 +154,9 @@ namespace RenderGroupRenderer
                 return;
 
             Profiler.BeginSample("CullingModule BVHCulling");
-            if (m_System != null && m_System.showDebug)
-            {
-                //Debug代码 可以移除
-                m_BVHTree.Iteration(g => g.SetCPUCullingResult(RenderGroup.ShowState.BVHCulling), null);
-            }
-
-
+            m_BVHTree.Iteration(g => g.SetCPUCullingResult(RenderGroup.ShowState.BVHCulling), null);
             m_VisibleNodes.Clear();
-            m_AfterBVHCullingRenderItemCount = 0;
-            m_BVHTree.FrustumCull(Flags, ConvexVolume, m_VisibleNodes, m_System.infoModule.cullResult, ref m_AfterBVHCullingRenderItemCount);
+            m_BVHTree.FrustumCull(Flags, ConvexVolume, m_VisibleNodes, m_System.infoModule.cullResult);
             
             //更新 info剔除结果
             Profiler.EndSample();
@@ -117,47 +164,66 @@ namespace RenderGroupRenderer
 
         void CPUPreItemCulling()
         {
-            if (m_VisibleNodes.Count <= 0)
-                return;
-            
-            Profiler.BeginSample("CullingModule CPUPreItemCulling");
-            var cullingBoundsNativeArray = new NativeArray<FBoxSphereBounds>(m_AfterBVHCullingRenderItemCount, Allocator.TempJob);
-            var cullingGroupIDsNativeArray = new NativeArray<int>(m_AfterBVHCullingRenderItemCount, Allocator.TempJob);
-            var cullingResultNativeArray = new NativeArray<bool>(m_AfterBVHCullingRenderItemCount, Allocator.TempJob);
-
-            int index = 0;
-            for (int i = 0; i < m_VisibleNodes.Count; i++)
+            if (!Flags.bUseVisibilityOctree)
             {
-                var renerGroups = m_VisibleNodes[i].Objects;
-                for (int n = 0; n < renerGroups.Count; n++)
+                m_VisibleNodes.Clear();
+                foreach (var renderGroup in m_System.renderGroups)
                 {
-                    var renderGroup = renerGroups[n];
-                    renderGroup.SetCPUCullingResult(RenderGroup.ShowState.PassBVHCulling);
-                    cullingGroupIDsNativeArray[index] = renderGroup.groupID;
-                    cullingBoundsNativeArray[index] = renderGroup.bounds;
-                    cullingResultNativeArray[index] = false;
-
-                    index++;
+                    renderGroup.SetCPUCullingResult(RenderGroup.ShowState.BVHCulling);
+                    m_VisibleNodes.Add(renderGroup.groupID);
                 }
             }
             
+            if (m_VisibleNodes.Length <= 0)
+                return;
+
+            Profiler.BeginSample("CullingModule CPU Group Culling");
+            var cullingBoundsNativeArray = new NativeArray<FBoxSphereBounds>(m_VisibleNodes.Length, Allocator.TempJob);
+            var cullingGroupIDsNativeArray = new NativeArray<int>(m_VisibleNodes.Length, Allocator.TempJob);
+            var cullingResultNativeArray = new NativeArray<bool>(m_VisibleNodes.Length, Allocator.TempJob);
+
+            
+            Profiler.BeginSample("CullingModule Prepare Group Culling Data");
+
+            // for (int i = 0; i < m_VisibleNodes.Length; i++)
+            // {
+            //     var renderGroup = m_VisibleNodes[i];
+            //     renderGroup.SetCPUCullingResult(RenderGroup.ShowState.PassBVHCulling);
+            //     cullingGroupIDsNativeArray[i] = renderGroup.groupID;
+            //     cullingBoundsNativeArray[i] = renderGroup.bounds;
+            //     cullingResultNativeArray[i] = false;
+            // }
+            
+            var prepareJobs = PrepareRenderGroupCulling.CreateJob(m_VisibleNodes, m_System.groupBoundsArray, cullingGroupIDsNativeArray, cullingBoundsNativeArray, cullingResultNativeArray);
+            var preparejob = prepareJobs.Schedule(m_VisibleNodes.Length, 32);
+            preparejob.Complete();
+            
+            Profiler.EndSample();
             int length = cullingBoundsNativeArray.Length;
 
             var cullJobs = RenderGroupCulling.CreateJob(Flags, ConvexVolume, cullingBoundsNativeArray, cullingResultNativeArray);
-            var job = cullJobs.Schedule(length, length);
+            var job = cullJobs.Schedule(length, 32);
             job.Complete();
             
+            
+            Profiler.BeginSample("CullingModule Deal Group Culling Data");
             //读取Group剔除结果 直接设置GroupItem的剔除结果
             for (int i = 0; i < cullingResultNativeArray.Length; i++)
             {
                 bool result = cullingResultNativeArray[i];
                 var groupID = cullingGroupIDsNativeArray[i];
-                var items = m_System.renderGroups[groupID].items;
+                var renderGroup = m_System.renderGroups[groupID];
+                if(result)
+                    renderGroup.SetCPUCullingResult(RenderGroup.ShowState.PassBVHCulling);
+                m_System.renderGroups[groupID] = renderGroup;
+                var items = renderGroup.items;
                 for (int j = 0; j < items.Length; j++)
                 {
-                    m_System.infoModule.cullResult[items[j].itemID] = (uint)(result?1:0);
+                    m_System.infoModule.cullResult[items[j].itemID] = (uint)(result ? 1 : 0);
                 }
             }
+            
+            Profiler.EndSample();
 
             cullingBoundsNativeArray.Dispose();
             cullingGroupIDsNativeArray.Dispose();
@@ -175,8 +241,9 @@ namespace RenderGroupRenderer
             
             foreach (var node in m_VisibleNodes)
             {
+                var renderGroup = m_System.renderGroups[node];
                 // Gizmos.DrawWireSphere(node.Bounds.Origin, node.Bounds.SphereRadius);
-                Gizmos.DrawWireCube(node.Bounds.Origin, 2 * node.Bounds.BoxExtent);
+                Gizmos.DrawWireCube(renderGroup.bounds.Origin, 2 * renderGroup.bounds.BoxExtent);
             }
            
             // Gizmos.DrawFrustum(c);

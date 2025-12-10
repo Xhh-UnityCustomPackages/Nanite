@@ -44,11 +44,14 @@ namespace RenderGroupRenderer
         [ShowInInspector, ReadOnly]
         private RenderGroup[] m_RenderGroups;
         
+        private NativeArray<FBoxSphereBounds> m_GroupBoundsArray;
+        
         private RenderArgsItem[] m_RenderArgsItems;
         
         public RenderGroup[] renderGroups => m_RenderGroups;
         public RendererInfoModule infoModule => m_InfoModule;
         public CullingModule cullingModule => m_CullingModule;
+        public NativeArray<FBoxSphereBounds> groupBoundsArray => m_GroupBoundsArray;
 
         private void Awake()
         {
@@ -64,6 +67,7 @@ namespace RenderGroupRenderer
             m_CullingModule = new(this);
             m_CullingModule.SetCullingCamera(CullingCamera);
             m_CullingModule.AddToBVHFrustumCull(m_SceneModule.BVHTree);
+            // m_CullingModule.AddToSceneFrustumCull(m_SceneModule.Octree);
 
             m_RendererModule = new RenderGroupRenderer(this);
             m_RendererModule.Init(m_RenderArgsItems);
@@ -77,10 +81,12 @@ namespace RenderGroupRenderer
             m_CullingModule.Dispose();
             m_InfoModule.Dispose();
             m_RendererModule.Dispose();
+            m_GroupBoundsArray.Dispose();
         }
 
         void CreateRenderGroup()
         {
+            m_GroupBoundsArray = new NativeArray<FBoxSphereBounds>(renderGroupData.groupDatas.Count, Allocator.Persistent);
             m_RenderGroups = new RenderGroup[renderGroupData.groupDatas.Count];
             var groupDatas = renderGroupData.groupDatas;
             int itemID = 0;
@@ -92,14 +98,13 @@ namespace RenderGroupRenderer
                 FBoxSphereBounds bounds = new FBoxSphereBounds();
                 bounds.SetMinMax(groupData.bounds.min, groupData.bounds.max);
                 renderGroup.bounds = bounds;
-                renderGroup.items = new RenderGroupItem[groupData.itemDatas.Count];
+                renderGroup.items = new NativeArray<RenderGroupItem>(groupData.itemDatas.Count, Allocator.Persistent);
+                m_GroupBoundsArray[i] = bounds;
                 for (int j = 0; j < groupData.itemDatas.Count; j++)
                 {
                     var itemData = groupData.itemDatas[j];
                     FBoxSphereBounds itemBounds = new FBoxSphereBounds(itemData.bounds);
-                    RenderGroupItem renderGroupItem = new RenderGroupItem(itemBounds, itemData.itemID);
-                    renderGroupItem.groupID = i;
-                    renderGroupItem.itemID = itemID++;
+                    RenderGroupItem renderGroupItem = new RenderGroupItem(itemBounds, itemData.itemID, i, itemID++);
                     renderGroup.items[j] = renderGroupItem;
                 }
 

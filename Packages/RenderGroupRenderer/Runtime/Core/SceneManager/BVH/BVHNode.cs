@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using UnityEngine;
 
 namespace RenderGroupRenderer
@@ -65,7 +66,7 @@ namespace RenderGroupRenderer
             }
         }
 
-        public void FrustumCull(FFrustumCullingFlags Flags, FConvexVolume convexVolume, List<BVHNode> visibleNodes, ref uint[] cullResultArray, ref int itemCount)
+        public void FrustumCull(FFrustumCullingFlags Flags, FConvexVolume convexVolume, NativeList<int> visibleNodes, ref uint[] cullResultArray)
         {
             //这个是Debug逻辑 可以移除或者用宏开启
             if (IsLeaf)
@@ -76,7 +77,7 @@ namespace RenderGroupRenderer
                 }
             }
             
-            if(Flags.bUseSphereTestFirst)
+            if (Flags.bUseSphereTestFirst)
             {
                 //先用球体包围盒剔除
                 if (!convexVolume.IntersectSphere(m_Bounds.Origin, m_Bounds.SphereRadius))
@@ -91,19 +92,21 @@ namespace RenderGroupRenderer
                 SetGroupCullResult(ref cullResultArray, false);
                 return;
             }
-            
+
             //过了视锥剔除
             if (IsLeaf)
             {
-                visibleNodes.Add(this);
-                itemCount += m_Objects.Count;
+                foreach (var renderGroup in m_Objects)
+                {
+                    visibleNodes.Add(renderGroup.groupID);
+                }
                 
                 SetGroupCullResult(ref cullResultArray, true);
             }
             else
             {
-                left.FrustumCull(Flags, convexVolume, visibleNodes, ref cullResultArray, ref itemCount);
-                right.FrustumCull(Flags, convexVolume, visibleNodes, ref cullResultArray, ref itemCount);
+                left.FrustumCull(Flags, convexVolume, visibleNodes, ref cullResultArray);
+                right.FrustumCull(Flags, convexVolume, visibleNodes, ref cullResultArray);
             }
         }
 

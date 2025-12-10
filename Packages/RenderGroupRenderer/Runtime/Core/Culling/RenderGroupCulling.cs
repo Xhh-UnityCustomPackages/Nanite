@@ -7,6 +7,42 @@ using UnityEngine;
 namespace RenderGroupRenderer
 {
     [BurstCompile(CompileSynchronously = true)]
+    public struct PrepareRenderGroupCulling : IJobParallelFor
+    {
+        public static PrepareRenderGroupCulling CreateJob(
+            NativeList<int> visibleNodes,
+            NativeArray<FBoxSphereBounds> allBounds,
+            NativeArray<int> groupIDs,
+            NativeArray<FBoxSphereBounds> bounds,
+            NativeArray<bool> results
+        )
+        {
+            PrepareRenderGroupCulling job = new ();
+            job.groupIndexes = visibleNodes;
+            job.groupIDs = groupIDs;
+            job.allGroupBounds = allBounds;
+            job.bounds = bounds;
+            job.results = results;
+            return job;
+        }
+        
+        [ReadOnly] NativeList<int> groupIndexes;
+        [ReadOnly] NativeArray<FBoxSphereBounds> allGroupBounds;
+        
+        public NativeArray<int> groupIDs; //全部物体的包围盒
+        public NativeArray<FBoxSphereBounds> bounds; //全部物体的包围盒
+        public NativeArray<bool> results; //全部物体的包围盒
+
+        public void Execute(int index)
+        {
+            var groupIndex = groupIndexes[index];
+            groupIDs[index] = groupIndex;
+            bounds[index] = allGroupBounds[groupIndex];
+            results[index] = false;
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true)]
     public struct RenderGroupCulling : IJobParallelFor
     {
         public static RenderGroupCulling CreateJob(
@@ -47,6 +83,15 @@ namespace RenderGroupRenderer
             }
             
             return ViewCullingFrustum.IntersectBox(Bounds.Origin, Bounds.BoxExtent);
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true)]
+    public struct AfterRenderGroupCulling : IJobParallelFor
+    {
+        public void Execute(int index)
+        {
+            
         }
     }
 }

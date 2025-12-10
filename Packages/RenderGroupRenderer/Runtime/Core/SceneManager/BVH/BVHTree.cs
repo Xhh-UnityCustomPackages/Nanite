@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using UnityEngine;
 
 namespace RenderGroupRenderer
@@ -57,9 +58,9 @@ namespace RenderGroupRenderer
             return node;
         }
 
-        public void FrustumCull(FFrustumCullingFlags Flags, FConvexVolume convexVolume, List<BVHNode> visibleNodes, uint[] cullResultArray, ref int itemCount)
+        public void FrustumCull(FFrustumCullingFlags Flags, FConvexVolume convexVolume, NativeList<int> visibleNodes, uint[] cullResultArray)
         {
-            m_Root.FrustumCull(Flags, convexVolume, visibleNodes, ref cullResultArray, ref itemCount);
+            m_Root.FrustumCull(Flags, convexVolume, visibleNodes, ref cullResultArray);
         }
 
         public void DrawTargetDepth(int displayDepth)
