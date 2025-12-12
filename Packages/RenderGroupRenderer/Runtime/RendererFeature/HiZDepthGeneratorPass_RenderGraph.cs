@@ -46,7 +46,8 @@ namespace RenderGroupRenderer
                 builder.UseTexture(passData.occluderHandles.occluderDepthPyramid, AccessFlags.ReadWrite);
                 builder.SetRenderFunc((UpdateOccludersPassData data, ComputeGraphContext context) =>
                 {
-                    ctx.CreateFarDepthPyramid(context.cmd, in data.occluderParams, in data.occluderHandles, m_Planes, m_HiZCS, 0);
+                    OccluderSubviewUpdate subviewUpdate = new OccluderSubviewUpdate(cameraData);
+                    ctx.CreateFarDepthPyramid(context.cmd, in data.occluderParams, in data.occluderHandles, m_Planes, m_HiZCS, subviewUpdate);
                 });
             }
         }

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace RenderGroupRenderer
 {
-    public class CameraData
+    public class CullingCameraData
     {
         public Camera camera;
         

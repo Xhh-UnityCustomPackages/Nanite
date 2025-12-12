@@ -13,6 +13,7 @@ namespace RenderGroupRenderer
     {
         private OccluderContext ctx;
         private readonly ComputeShader m_HiZCS;
+        private OcclusionCullingCommonShaderVariables m_CommonShaderVariables;
 
         private readonly ProfilingSampler m_ProfilingSamplerUpdateOccluders;
         private NativeArray<Plane> m_Planes;//摄像机平面
@@ -51,13 +52,16 @@ namespace RenderGroupRenderer
             {
                 depthSize = new Vector2Int(scaledWidth, scaledHeight),
             };
+
             
             occluderParams.depthTextureRTHandle = renderingData.cameraData.renderer.cameraDepthTargetHandle;
             ctx.PrepareOccluders(occluderParams);
+            m_CommonShaderVariables = new OcclusionCullingCommonShaderVariables(in ctx);
             var cmd = CommandBufferPool.Get();
             using (new ProfilingScope(cmd, m_ProfilingSamplerUpdateOccluders))
             {
-                ctx.CreateFarDepthPyramid(cmd, in occluderParams, m_Planes, m_HiZCS, 0);
+                OccluderSubviewUpdate subviewUpdate = new OccluderSubviewUpdate(renderingData.cameraData);
+                ctx.CreateFarDepthPyramid(cmd, in occluderParams, m_Planes, m_HiZCS, subviewUpdate);
                 cmd.SetGlobalTexture("_OccluderDepthPyramid", ctx.occluderDepthPyramid);
             }
             context.ExecuteCommandBuffer(cmd);

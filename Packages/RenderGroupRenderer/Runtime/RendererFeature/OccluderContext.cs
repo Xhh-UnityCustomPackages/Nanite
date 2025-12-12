@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
+using UnityEngine.Rendering.Universal;
 
 namespace RenderGroupRenderer
 {
@@ -32,12 +33,24 @@ namespace RenderGroupRenderer
         public RTHandle occluderDepthPyramid;
 
         public Vector2Int depthBufferSize;
+        
+        public OccluderDerivedData subviewData;
 
         public NativeArray<OccluderMipBounds> occluderMipBounds;
         public Vector2Int occluderMipLayoutSize; // total size of 2D layout specified by occluderMipBounds
 
         public ComputeBuffer constantBuffer; //常量Buffer 只有下面1个
         public NativeArray<OccluderDepthPyramidConstants> constantBufferData;
+        
+        public Vector2 depthBufferSizeInOccluderPixels {
+            get
+            {
+                int occluderPixelSize = 1 << k_FirstDepthMipIndex;
+                return new Vector2(
+                    (float)depthBufferSize.x / (float)occluderPixelSize,
+                    (float)depthBufferSize.y / (float)occluderPixelSize);
+            }
+        }
 
         public void Dispose()
         {
@@ -59,34 +72,7 @@ namespace RenderGroupRenderer
             if (constantBufferData.IsCreated)
                 constantBufferData.Dispose();
         }
-
-        public OccluderHandles Import(RenderGraph renderGraph)
-        {
-            RenderTargetInfo rtInfo = new RenderTargetInfo
-            {
-                width = occluderDepthPyramidSize.x,
-                height = occluderDepthPyramidSize.y,
-                volumeDepth = 1,
-                msaaSamples = 1,
-                format = GraphicsFormat.R32_SFloat,
-                bindMS = false,
-            };
-            OccluderHandles occluderHandles = new OccluderHandles()
-            {
-                occluderDepthPyramid = renderGraph.ImportTexture(occluderDepthPyramid, rtInfo)
-            };
-            // if (occlusionDebugOverlay != null)
-            //     occluderHandles.occlusionDebugOverlay = renderGraph.ImportBuffer(occlusionDebugOverlay);
-            return occluderHandles;
-        }
-
-        public void PrepareOccluders(in OccluderParameters occluderParams)
-        {
-            depthBufferSize = occluderParams.depthSize;
-            UpdateMipBounds();
-            AllocateTexturesIfNecessary(false);
-        }
-
+        
         private void UpdateMipBounds()
         {
             int occluderPixelSize = 1 << k_FirstDepthMipIndex;
@@ -123,6 +109,33 @@ namespace RenderGroupRenderer
             occluderMipLayoutSize = totalSize;
         }
 
+        public OccluderHandles Import(RenderGraph renderGraph)
+        {
+            RenderTargetInfo rtInfo = new RenderTargetInfo
+            {
+                width = occluderDepthPyramidSize.x,
+                height = occluderDepthPyramidSize.y,
+                volumeDepth = 1,
+                msaaSamples = 1,
+                format = GraphicsFormat.R32_SFloat,
+                bindMS = false,
+            };
+            OccluderHandles occluderHandles = new OccluderHandles()
+            {
+                occluderDepthPyramid = renderGraph.ImportTexture(occluderDepthPyramid, rtInfo)
+            };
+            // if (occlusionDebugOverlay != null)
+            //     occluderHandles.occlusionDebugOverlay = renderGraph.ImportBuffer(occlusionDebugOverlay);
+            return occluderHandles;
+        }
+
+        public void PrepareOccluders(in OccluderParameters occluderParams)
+        {
+            depthBufferSize = occluderParams.depthSize;
+            UpdateMipBounds();
+            AllocateTexturesIfNecessary(false);
+        }
+
         private void AllocateTexturesIfNecessary(bool debugOverlayEnabled)
         {
             Vector2Int minDepthPyramidSize = new Vector2Int(occluderMipLayoutSize.x, occluderMipLayoutSize.y);
@@ -156,13 +169,14 @@ namespace RenderGroupRenderer
                 cmd.DisableKeyword(cs, keyword);
         }
 
-        private OccluderDepthPyramidConstants SetupFarDepthPyramidConstants(NativeArray<Plane> silhouettePlanes)
+        private OccluderDepthPyramidConstants SetupFarDepthPyramidConstants(NativeArray<Plane> silhouettePlanes, OccluderSubviewUpdate cameraData)
         {
             OccluderDepthPyramidConstants cb = new OccluderDepthPyramidConstants();
-
             // write globals
             cb._OccluderMipLayoutSizeX = (uint)occluderMipLayoutSize.x;
             cb._OccluderMipLayoutSizeY = (uint)occluderMipLayoutSize.y;
+            
+            subviewData = OccluderDerivedData.FromParameters(cameraData);
 
             // Matrix4x4 viewProjMatrix
             //     = cameraData.GetProjectionMatrix()
@@ -201,12 +215,12 @@ namespace RenderGroupRenderer
         }
 
         public void CreateFarDepthPyramid(ComputeCommandBuffer cmd, in OccluderParameters occluderParams, in OccluderHandles occluderHandles, NativeArray<Plane> silhouettePlanes,
-            ComputeShader occluderDepthPyramidCS, int occluderDepthDownscaleKernel)
+            ComputeShader occluderDepthPyramidCS, OccluderSubviewUpdate cameraData)
         {
-            OccluderDepthPyramidConstants cb = SetupFarDepthPyramidConstants(silhouettePlanes);
+            OccluderDepthPyramidConstants cb = SetupFarDepthPyramidConstants(silhouettePlanes, cameraData);
 
             var cs = occluderDepthPyramidCS;
-            int kernel = occluderDepthDownscaleKernel;
+            int kernel = 0;
 
             var srcKeyword = new LocalKeyword(cs, "USE_SRC");
 
@@ -276,12 +290,12 @@ namespace RenderGroupRenderer
                 cmd.DisableKeyword(cs, keyword);
         }
 
-        public void CreateFarDepthPyramid(CommandBuffer cmd, in OccluderParameters occluderParams, NativeArray<Plane> silhouettePlanes, ComputeShader occluderDepthPyramidCS, int occluderDepthDownscaleKernel)
+        public void CreateFarDepthPyramid(CommandBuffer cmd, in OccluderParameters occluderParams, NativeArray<Plane> silhouettePlanes, ComputeShader occluderDepthPyramidCS, OccluderSubviewUpdate cameraData)
         {
-            OccluderDepthPyramidConstants cb = SetupFarDepthPyramidConstants(silhouettePlanes);
+            OccluderDepthPyramidConstants cb = SetupFarDepthPyramidConstants(silhouettePlanes, cameraData);
 
             var cs = occluderDepthPyramidCS;
-            int kernel = occluderDepthDownscaleKernel;
+            int kernel = 0;
 
             var srcKeyword = new LocalKeyword(cs, "USE_SRC");
 

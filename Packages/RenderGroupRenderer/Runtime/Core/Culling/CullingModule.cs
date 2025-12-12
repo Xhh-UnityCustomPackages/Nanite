@@ -26,20 +26,16 @@ namespace RenderGroupRenderer
         public FFrustumCullingFlags Flags;
         private FConvexVolume ConvexVolume;
         
-        private CameraData m_CameraData;
+        private CullingCameraData m_CameraData;
 
-        // private NativeArray<FBoxSphereBounds> m_CullingBoundsNativeArray;
-        // private NativeArray<int> m_CullingGroupIDsNativeArray;
-        // private NativeArray<bool> m_CullingResultNativeArray;
-
-        public CameraData CameraData => m_CameraData;
+        public CullingCameraData CameraData => m_CameraData;
 
         private RenderGroupRendererSystem m_System;
 
         public CullingModule(RenderGroupRendererSystem system)
         {
             m_System = system;
-            m_CameraData = new CameraData();
+            m_CameraData = new CullingCameraData();
             ConvexVolume = m_CameraData.GetCullingFrustum();
 
             Flags.bShouldVisibilityCull = true;
@@ -154,8 +150,6 @@ namespace RenderGroupRenderer
             m_BVHTree.Iteration(g => g.SetCPUCullingResult(RenderGroup.ShowState.BVHCulling), null);
             m_VisibleNodes.Clear();
             m_BVHTree.FrustumCull(Flags, ConvexVolume, m_VisibleNodes, m_System.infoModule.cullResult);
-            
-            //更新 info剔除结果
             Profiler.EndSample();
         }
         
@@ -183,22 +177,11 @@ namespace RenderGroupRenderer
             var cullingBoundsNativeArray = new NativeArray<FBoxSphereBounds>(m_VisibleNodes.Length, Allocator.TempJob);
             var cullingGroupIDsNativeArray = new NativeArray<int>(m_VisibleNodes.Length, Allocator.TempJob);
             var cullingResultNativeArray = new NativeArray<bool>(m_VisibleNodes.Length, Allocator.TempJob);
-
             
             Profiler.BeginSample("CullingModule Prepare Group Culling Data");
-
-            // for (int i = 0; i < m_VisibleNodes.Length; i++)
-            // {
-            //     var renderGroup = m_VisibleNodes[i];
-            //     renderGroup.SetCPUCullingResult(RenderGroup.ShowState.PassBVHCulling);
-            //     cullingGroupIDsNativeArray[i] = renderGroup.groupID;
-            //     cullingBoundsNativeArray[i] = renderGroup.bounds;
-            //     cullingResultNativeArray[i] = false;
-            // }
             var prepareJobs = PrepareRenderGroupCulling.CreateJob(m_VisibleNodes, m_System.groupBoundsArray, cullingGroupIDsNativeArray, cullingBoundsNativeArray, cullingResultNativeArray);
             var preparejob = prepareJobs.Schedule(m_VisibleNodes.Length, 32);
             preparejob.Complete();
-            
             Profiler.EndSample();
 
             Profiler.BeginSample("CullingModule Group Culling");
@@ -209,27 +192,11 @@ namespace RenderGroupRenderer
             Profiler.EndSample();
             
             Profiler.BeginSample("CullingModule Deal Group Culling Data");
+            //TODO 这里可以预估到RendderID,可以避免后续空 draw的问题
             //读取Group剔除结果 直接设置GroupItem的剔除结果
-            //这样写有GC问题 弃用
-            // Parallel.For(0, cullingResultNativeArray.Length,  index =>
-            // {
-            //     // bool result = cullingResultNativeArray[index];
-            //     // var groupID = cullingGroupIDsNativeArray[index];
-            //     // var renderGroup = m_System.renderGroups[groupID];
-            //     // if(result)
-            //     //     renderGroup.SetCPUCullingResult(RenderGroup.ShowState.PassBVHCulling);
-            //     // m_System.renderGroups[groupID] = renderGroup;
-            //     // for (int j = 0; j < renderGroup.itemCount; j++)
-            //     // {
-            //     //     var itemID = m_System.renderItems[renderGroup.itemStartIndex + j].itemID;
-            //     //     m_System.infoModule.cullResult[itemID] = (uint)(result ? 1 : 0);
-            //     // }
-            // });
-            
             var afterJobs = AfterRenderGroupCulling.CreateJob(cullingGroupIDsNativeArray, cullingResultNativeArray, m_System.renderGroups, m_System.renderItems, m_System.infoModule.cullResult);
             var afterjob = afterJobs.Schedule(length, 32);
             afterjob.Complete();
-            
             Profiler.EndSample();
 
             cullingBoundsNativeArray.Dispose();
@@ -252,15 +219,6 @@ namespace RenderGroupRenderer
                 // Gizmos.DrawWireSphere(node.Bounds.Origin, node.Bounds.SphereRadius);
                 Gizmos.DrawWireCube(renderGroup.bounds.Origin, 2 * renderGroup.bounds.BoxExtent);
             }
-           
-            // Gizmos.DrawFrustum(c);
-            // for (int i = 0; i < m_CullingBoundsNativeArray.Length; i++)
-            // {
-            //     var bounds = m_CullingBoundsNativeArray[i];
-            //     var result = m_CullingResultNativeArray[i];
-            //     Gizmos.color = result ? Color.green : Color.red;
-            //     Gizmos.DrawWireCube(bounds.center, bounds.size);
-            // }
         }
 
     }
