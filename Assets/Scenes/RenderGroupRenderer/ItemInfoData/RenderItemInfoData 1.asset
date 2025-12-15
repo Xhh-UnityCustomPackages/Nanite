@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54bf1264aa734582b28a9eebdf47edf7, type: 3}
+  m_Name: RenderItemInfoData 1
+  m_EditorClassIdentifier: 
+  lodCount: 3
+  lodDistance: {x: 6.220084, y: 12.440168, z: 37.32051}
+  lod0Info:
+    mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+    material: {fileID: 2100000, guid: 20f3501bd8ec8cd4d91696cfcb467580, type: 2}
+  lod1Info:
+    mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
+    material: {fileID: 2100000, guid: 20f3501bd8ec8cd4d91696cfcb467580, type: 2}
+  lod2Info:
+    mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+    material: {fileID: 2100000, guid: 20f3501bd8ec8cd4d91696cfcb467580, type: 2}

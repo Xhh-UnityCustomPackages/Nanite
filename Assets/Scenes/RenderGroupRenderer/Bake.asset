@@ -1,0 +1,179 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b71661220f4a4b4d8aa65e027f97e58, type: 3}
+  m_Name: Bake
+  m_EditorClassIdentifier: 
+  totalCount: 8
+  worldBounds:
+    m_Center: {x: -5.99, y: 3.6800003, z: -6.82}
+    m_Extent: {x: 0.5, y: 1, z: 0.5}
+  groupDatas:
+  - bounds:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0.5, y: 0.5, z: 0.5}
+    itemDatas:
+    - bounds:
+        m_Center: {x: 0, y: 0, z: 0}
+        m_Extent: {x: 0.5, y: 0.5, z: 0.5}
+      transform:
+        position:
+          x: 0
+          y: 0
+          z: 0
+        rotation:
+          x: -0
+          y: 0
+          z: 0
+        scale:
+          x: 1
+          y: 1
+          z: 1
+      itemID: 0
+  - bounds:
+      m_Center: {x: -1.5469999, y: 1, z: -0.074}
+      m_Extent: {x: 0.49999994, y: 0.5, z: 0.5}
+    itemDatas:
+    - bounds:
+        m_Center: {x: -1.547, y: 1, z: -0.074}
+        m_Extent: {x: 0.5, y: 0.5, z: 0.5}
+      transform:
+        position:
+          x: -1.547
+          y: 1
+          z: -0.074
+        rotation:
+          x: -0
+          y: 0
+          z: 0
+        scale:
+          x: 1
+          y: 1
+          z: 1
+      itemID: 0
+  - bounds:
+      m_Center: {x: 5.0299997, y: 1.5098097, z: -1.035}
+      m_Extent: {x: 1.29, y: 1.325, z: 1.965}
+    itemDatas:
+    - bounds:
+        m_Center: {x: 4.24, y: 1.1248097, z: -1.43}
+        m_Extent: {x: 0.5, y: 0.5, z: 0.5}
+      transform:
+        position:
+          x: 4.24
+          y: 1.1248097
+          z: -1.43
+        rotation:
+          x: -0
+          y: 0
+          z: 0
+        scale:
+          x: 1
+          y: 1
+          z: 1
+      itemID: 0
+    - bounds:
+        m_Center: {x: 4.8999996, y: 1.8348098, z: -2.5}
+        m_Extent: {x: 0.5, y: 1, z: 0.5}
+      transform:
+        position:
+          x: 4.8999996
+          y: 1.8348098
+          z: -2.5
+        rotation:
+          x: -0
+          y: 0
+          z: 0
+        scale:
+          x: 1
+          y: 1
+          z: 1
+      itemID: 0
+    - bounds:
+        m_Center: {x: 5.8199997, y: 1.1848097, z: 0.43000007}
+        m_Extent: {x: 0.5, y: 1, z: 0.5}
+      transform:
+        position:
+          x: 5.8199997
+          y: 1.1848097
+          z: 0.43000007
+        rotation:
+          x: -0
+          y: 0
+          z: 0
+        scale:
+          x: 1
+          y: 1
+          z: 1
+      itemID: 0
+  - bounds:
+      m_Center: {x: 1.35, y: 1.1248097, z: 0.289}
+      m_Extent: {x: 0.5, y: 0.5, z: 0.5}
+    itemDatas:
+    - bounds:
+        m_Center: {x: 1.35, y: 1.1248097, z: 0.289}
+        m_Extent: {x: 0.5, y: 0.5, z: 0.5}
+      transform:
+        position:
+          x: 1.35
+          y: 1.1248097
+          z: 0.289
+        rotation:
+          x: -0
+          y: 0
+          z: 0
+        scale:
+          x: 1
+          y: 1
+          z: 1
+      itemID: 0
+  - bounds:
+      m_Center: {x: 0.046000004, y: 1.1248097, z: -0.8740001}
+      m_Extent: {x: 0.5, y: 0.5, z: 0.5}
+    itemDatas:
+    - bounds:
+        m_Center: {x: 0.046, y: 1.1248097, z: -0.874}
+        m_Extent: {x: 0.5, y: 0.5, z: 0.5}
+      transform:
+        position:
+          x: 0.046
+          y: 1.1248097
+          z: -0.874
+        rotation:
+          x: -0
+          y: 0
+          z: 0
+        scale:
+          x: 1
+          y: 1
+          z: 1
+      itemID: 0
+  - bounds:
+      m_Center: {x: -5.99, y: 3.6800003, z: -6.82}
+      m_Extent: {x: 0.5, y: 1.0000001, z: 0.5}
+    itemDatas:
+    - bounds:
+        m_Center: {x: -5.99, y: 3.68, z: -6.82}
+        m_Extent: {x: 0.5, y: 1, z: 0.5}
+      transform:
+        position:
+          x: -5.99
+          y: 3.68
+          z: -6.82
+        rotation:
+          x: -0
+          y: 0
+          z: 0
+        scale:
+          x: 1
+          y: 1
+          z: 1
+      itemID: 0
